@@ -111,6 +111,22 @@ static void button_home_event_handler(lv_event_t * e) {
   }
 }
 
+// void table_event_handler(lv_event_t *e) {
+//     if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+//         lv_obj_t *table = lv_event_get_target(e); // Ambil objek tabel
+//         uint16_t row, col;
+
+//         // Dapatkan sel yang dipilih
+//         if (lv_table_get_selected_cell(table, &row, &col)) {
+//             char cell_value[32];
+//             lv_table_get_cell_value(table, row, col, cell_value, sizeof(cell_value));
+//             Serial.printf("Selected cell -> Row: %d, Col: %d, Value: %s\n", row, col, cell_value);
+//         } else {
+//             Serial.println("No cell selected!");
+//         }
+//     }
+// }
+
 //________________________________________________________________________________ 
 void setup() {
   Serial.begin(115200);
@@ -167,6 +183,7 @@ void setup() {
   lv_obj_add_event_cb(objects.button_attendance, button_attendance_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_1, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_2, button_home_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.button_back_3, button_register_event_handler, LV_EVENT_CLICKED, NULL);
 
   lv_table_set_col_cnt(objects.table, 2);
 
@@ -232,6 +249,8 @@ void setup() {
   } else {
     Serial.println("WiFi Disconnected");
   }
+
+  // lv_obj_add_event_cb(objects.table, table_event_handler, LV_EVENT_CLICKED, NULL);
 }
 
 void loop() {

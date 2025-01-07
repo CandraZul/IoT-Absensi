@@ -71,8 +71,9 @@ void create_screen_reg_screen() {
             // table
             lv_obj_t *obj = lv_table_create(parent_obj);
             objects.table = obj;
-            lv_obj_set_pos(obj, 0, 38);
-            lv_obj_set_size(obj, 320, 202);
+            lv_obj_set_pos(obj, 0, 37);
+            lv_obj_set_size(obj, 320, 203);
+            lv_obj_set_scroll_snap_x(obj, LV_DIR_VER);
             lv_obj_set_style_radius(obj, 20, LV_PART_MAIN | LV_STATE_DEFAULT);
         }
         {
@@ -106,7 +107,7 @@ void create_screen_reg_screen() {
             // button_back_1
             lv_obj_t *obj = lv_btn_create(parent_obj);
             objects.button_back_1 = obj;
-            lv_obj_set_pos(obj, 31, 2);
+            lv_obj_set_pos(obj, 2, 2);
             lv_obj_set_size(obj, 50, 34);
             lv_obj_set_style_radius(obj, 20, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -177,7 +178,7 @@ void create_screen_attendance_screen() {
             // button_back_2
             lv_obj_t *obj = lv_btn_create(parent_obj);
             objects.button_back_2 = obj;
-            lv_obj_set_pos(obj, 136, 38);
+            lv_obj_set_pos(obj, 0, 2);
             lv_obj_set_size(obj, 50, 34);
             lv_obj_set_style_radius(obj, 20, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -208,6 +209,87 @@ void create_screen_attendance_screen() {
 void tick_screen_attendance_screen() {
 }
 
+void create_screen_add_finger_screen() {
+    lv_obj_t *obj = lv_obj_create(0);
+    objects.add_finger_screen = obj;
+    lv_obj_set_pos(obj, 0, 0);
+    lv_obj_set_size(obj, 320, 240);
+    {
+        lv_obj_t *parent_obj = obj;
+        {
+            // label_name_1
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.label_name_1 = obj;
+            lv_obj_set_pos(obj, 160, 181);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text(obj, "");
+            lv_obj_set_style_text_font(obj, &lv_font_montserrat_30, LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+        {
+            lv_obj_t *obj = lv_obj_create(parent_obj);
+            lv_obj_set_pos(obj, 0, 0);
+            lv_obj_set_size(obj, 320, 240);
+            lv_obj_set_style_pad_left(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_pad_top(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_pad_right(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_pad_bottom(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_bg_opa(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_radius(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+        {
+            lv_obj_t *obj = lv_obj_create(parent_obj);
+            objects.obj2 = obj;
+            lv_obj_set_pos(obj, 0, 0);
+            lv_obj_set_size(obj, 320, 38);
+            lv_obj_set_style_radius(obj, 20, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_bg_color(obj, lv_color_hex(0xff11ffe3), LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+        {
+            // label_finger_name
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.label_finger_name = obj;
+            lv_obj_set_pos(obj, 72, 8);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text(obj, "Name's Fingerprint");
+            lv_obj_set_style_text_font(obj, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_align(obj, LV_ALIGN_TOP_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+        {
+            // button_back_3
+            lv_obj_t *obj = lv_btn_create(parent_obj);
+            objects.button_back_3 = obj;
+            lv_obj_set_pos(obj, 0, 2);
+            lv_obj_set_size(obj, 50, 34);
+            lv_obj_set_style_radius(obj, 20, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_bg_color(obj, lv_color_hex(0xfff32121), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+            {
+                lv_obj_t *parent_obj = obj;
+                {
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    lv_obj_set_pos(obj, 0, 0);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_label_set_text(obj, "X");
+                    lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_text_font(obj, &lv_font_montserrat_28, LV_PART_MAIN | LV_STATE_DEFAULT);
+                }
+            }
+        }
+        {
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            lv_obj_set_pos(obj, 68, 93);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text(obj, "Put your finger\non the sensor");
+            lv_obj_set_style_text_font(obj, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+    }
+}
+
+void tick_screen_add_finger_screen() {
+}
+
 
 void create_screens() {
     lv_disp_t *dispp = lv_disp_get_default();
@@ -217,6 +299,7 @@ void create_screens() {
     create_screen_main();
     create_screen_reg_screen();
     create_screen_attendance_screen();
+    create_screen_add_finger_screen();
 }
 
 typedef void (*tick_screen_func_t)();
@@ -225,6 +308,7 @@ tick_screen_func_t tick_screen_funcs[] = {
     tick_screen_main,
     tick_screen_reg_screen,
     tick_screen_attendance_screen,
+    tick_screen_add_finger_screen,
 };
 
 void tick_screen(int screen_index) {
