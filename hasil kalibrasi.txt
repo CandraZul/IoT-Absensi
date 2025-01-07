@@ -1,0 +1,2 @@
+Computed X:  alpha_x = 0.000, beta_x = 0.089, delta_x = -26.650
+Computed Y:  alpha_y = 0.066, beta_y = -0.001, delta_y = -14.171

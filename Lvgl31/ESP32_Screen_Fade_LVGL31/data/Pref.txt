@@ -1,0 +1,22 @@
+6
+0
+>> EXIT <<
+
+1
+SSID
+Ilva1
+2
+Password
+YourPass
+3
+Brigtness
+128
+4
+Wifi Limit
+-90
+5
+FTP ON/OFF
+ON
+6
+ADD ROW
+DEL ROW

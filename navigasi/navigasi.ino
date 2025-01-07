@@ -1,0 +1,242 @@
+#include <SPI.h>
+#include <lvgl.h>
+#include <TFT_eSPI.h>
+#include <XPT2046_Touchscreen.h>
+#include "ui.h"
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h> 
+
+const char* ssid = "enumatechz";
+const char* password = "3numaTechn0l0gy";
+
+//Your Domain name with URL path or IP address with path
+String serverName = "http://192.168.1.16:8080/api/members";
+
+// Defines the T_CS Touchscreen PIN.
+#define T_CS_PIN  13 //--> T_CS
+
+// Defines the screen resolution.
+#define SCREEN_WIDTH  320
+#define SCREEN_HEIGHT 240
+
+// Defines the Touchscreen calibration result values.
+// Replace with your own calibration values.
+#define XPT2046_IRQ 36   // T_IRQ
+#define XPT2046_MOSI 32  // T_DIN
+#define XPT2046_MISO 39  // T_OUT
+#define XPT2046_CLK 25   // T_CLK
+#define XPT2046_CS 33    // T_CS
+
+#define LED_PIN 27
+
+// LVGL draw into this buffer, 1/10 screen size usually works well.
+#define DRAW_BUF_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT / 10 * (LV_COLOR_DEPTH / 8))
+uint8_t *draw_buf;
+
+uint32_t lastTick = 0;
+
+// Declaring the "XPT2046_Touchscreen" object as "touchscreen".
+SPIClass touchscreenSPI = SPIClass(VSPI);
+XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
+
+//________________________________________________________________________________ 
+// If logging is enabled, it will inform the user about what is happening in the library.
+void log_print(lv_log_level_t level, const char * buf) {
+  LV_UNUSED(level);
+  Serial.println(buf);
+  Serial.flush();
+}
+
+void touchscreen_read(lv_indev_t * indev, lv_indev_data_t * data) {
+  if (touchscreen.tirqTouched() && touchscreen.touched()) {
+    TS_Point p = touchscreen.getPoint();
+
+    // Validasi untuk memastikan bahwa sentuhan valid
+    float alpha_x, beta_x, alpha_y, beta_y, delta_x, delta_y;
+    alpha_x = 0.000;
+    beta_x = 0.089;
+    delta_x = -26.650;
+    alpha_y = 0.066;
+    beta_y = -0.001;
+    delta_y = -14.171;
+
+    // Hitung nilai x dan y setelah kalibrasi
+    int calibrated_x = alpha_y * p.x + beta_y * p.y + delta_y;
+    calibrated_x = min(SCREEN_WIDTH - 1, max(0, calibrated_x));
+
+    int calibrated_y = alpha_x * p.x + beta_x * p.y + delta_x;
+    calibrated_y = min(SCREEN_HEIGHT - 1, max(0, calibrated_y));
+
+    int pressure = p.z; // Tekanan sentuhan
+
+    // Periksa apakah tekanan cukup besar untuk dianggap sebagai sentuhan valid
+    data->state = LV_INDEV_STATE_PRESSED;
+    data->point.x = calibrated_x;
+    data->point.y = calibrated_y;
+
+    Serial.print("X = ");
+    Serial.print(calibrated_x);
+    Serial.print(" | Y = ");
+    Serial.print(calibrated_y);
+    Serial.print(" | Pressure = ");
+    Serial.println(pressure);
+    
+  } else {
+    data->state = LV_INDEV_STATE_RELEASED;
+  }
+}
+
+
+// Event handler for the "Register" button.
+static void button_register_event_handler(lv_event_t * e) {
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+    Serial.println("pindah ke reg");
+    lv_scr_load(objects.reg_screen);  // Go to Register screen.
+  }
+}
+
+// Event handler for the "Attendance" button.
+static void button_attendance_event_handler(lv_event_t * e) {
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+    Serial.println("pindah ke attendance");
+    lv_scr_load(objects.attendance_screen);  // Go to Attendance screen.
+  }
+}
+
+static void button_home_event_handler(lv_event_t * e) {
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+    Serial.println("kembali ke home");
+    lv_scr_load(objects.main);  // Go to Register screen.
+  }
+}
+
+//________________________________________________________________________________ 
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConnected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+  // delay(3000);
+  
+  Serial.println("ESP32 + TFT LCD Touchscreen ILI9341 + LVGL + EEZ Studio");
+  delay(500);
+
+  String LVGL_Arduino = String("LVGL Library Version: ") + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
+  Serial.println(LVGL_Arduino);
+  delay(500);
+  
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+
+  // Initialize the touchscreen
+  touchscreenSPI.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
+  touchscreen.begin(touchscreenSPI);
+  // Set the Touchscreen rotation in landscape mode
+  // Note: in some displays, the touchscreen might be upside down, so you might need to set the rotation to 3: touchscreen.setRotation(3);
+  touchscreen.setRotation(2);
+
+  // Initialize LVGL
+  lv_init();
+  lv_log_register_print_cb(log_print);
+
+  // Create display buffer
+  draw_buf = new uint8_t[DRAW_BUF_SIZE];
+  lv_display_t * disp = lv_tft_espi_create(SCREEN_HEIGHT, SCREEN_WIDTH, draw_buf, DRAW_BUF_SIZE);
+  lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_270);
+
+  // Initialize LVGL input device (Touchscreen)
+  lv_indev_t * indev = lv_indev_create();
+  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(indev, touchscreen_read);
+
+  Serial.println("LVGL Setup Completed.");
+  delay(500);
+
+  // Initialize EEZ Studio GUI
+  ui_init();
+
+  // Register button event handlers
+  lv_obj_add_event_cb(objects.button_register, button_register_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.button_attendance, button_attendance_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.button_back_1, button_home_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.button_back_2, button_home_event_handler, LV_EVENT_CLICKED, NULL);
+
+  lv_table_set_col_cnt(objects.table, 2);
+
+  lv_table_set_row_count(objects.table, 1);
+
+  lv_table_set_cell_value(objects.table, 0, 0, "ID");
+  lv_table_set_cell_value(objects.table, 0, 1, "Name");
+
+        // Get data from the server
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+
+    // Build server path
+    String serverPath = serverName;
+
+    // Connect to the server
+    http.begin(serverPath.c_str());
+
+    // Send HTTP GET request
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0) {
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+
+      String payload = http.getString();
+      Serial.println("Received Payload:");
+      // Serial.println(payload);
+
+      // Parse JSON payload
+      StaticJsonDocument<1024> doc;  // Adjust buffer size as needed
+      DeserializationError error = deserializeJson(doc, payload);
+
+      if (!error) {
+        // Extract members array
+        JsonArray members = doc["members"].as<JsonArray>();
+
+        lv_table_set_row_count(objects.table, members.size() + 1);
+
+        // Loop through the members array and insert values into the table
+        int row = 1; // Start from row 1, as row 0 is for headers
+        for (JsonObject member : members) {
+          String id = member["id"].as<String>();
+          String name = member["name"].as<String>();
+
+          // Insert ID and Name into the table
+          lv_table_set_cell_value(objects.table, row, 0, id.c_str());
+          lv_table_set_cell_value(objects.table, row, 1, name.c_str());
+
+          row++; 
+        }
+      } else {
+        Serial.print("JSON Deserialization failed: ");
+        Serial.println(error.c_str());
+      }
+    } else {
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
+    }
+
+    // Free resources
+    http.end();
+  } else {
+    Serial.println("WiFi Disconnected");
+  }
+}
+
+void loop() {
+  lv_tick_inc(millis() - lastTick); // Update the tick timer.
+  lastTick = millis();
+  lv_timer_handler(); // Update the UI.
+  delay(5);
+}
