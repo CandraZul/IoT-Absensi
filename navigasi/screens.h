@@ -14,16 +14,18 @@ typedef struct _objects_t {
     lv_obj_t *add_finger_screen;
     lv_obj_t *button_register;
     lv_obj_t *button_attendance;
-    lv_obj_t *table;
     lv_obj_t *obj0;
     lv_obj_t *button_back_1;
+    lv_obj_t *table;
     lv_obj_t *label_name;
     lv_obj_t *obj1;
     lv_obj_t *button_back_2;
+    lv_obj_t *button_checkin;
     lv_obj_t *label_name_1;
     lv_obj_t *obj2;
     lv_obj_t *label_finger_name;
     lv_obj_t *button_back_3;
+    lv_obj_t *label_register_2;
 } objects_t;
 
 extern objects_t objects;

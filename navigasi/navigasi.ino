@@ -12,6 +12,7 @@ const char* password = "3numaTechn0l0gy";
 
 //Your Domain name with URL path or IP address with path
 String serverName = "http://192.168.1.16:8080/api/members";
+String apiCheckin = "http://192.168.1.16:8080/api/attendance";
 
 // Defines the T_CS Touchscreen PIN.
 #define T_CS_PIN  13 //--> T_CS
@@ -39,6 +40,11 @@ uint32_t lastTick = 0;
 // Declaring the "XPT2046_Touchscreen" object as "touchscreen".
 SPIClass touchscreenSPI = SPIClass(VSPI);
 XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
+
+struct EventData {
+  int id;
+  String type;
+};
 
 //________________________________________________________________________________ 
 // If logging is enabled, it will inform the user about what is happening in the library.
@@ -111,21 +117,85 @@ static void button_home_event_handler(lv_event_t * e) {
   }
 }
 
-// void table_event_handler(lv_event_t *e) {
-//     if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
-//         lv_obj_t *table = lv_event_get_target(e); // Ambil objek tabel
-//         uint16_t row, col;
+static void add_finger_screen_event_handler(const String& name) {
+  // Menggunakan *name untuk mengakses nilai yang ditunjuk oleh pointer
+  String labelText = name; // Gabungkan nama dengan string
+  lv_label_set_text(objects.label_finger_name, labelText.c_str()); // Gunakan c_str() untuk mengonversi String ke const char*
 
-//         // Dapatkan sel yang dipilih
-//         if (lv_table_get_selected_cell(table, &row, &col)) {
-//             char cell_value[32];
-//             lv_table_get_cell_value(table, row, col, cell_value, sizeof(cell_value));
-//             Serial.printf("Selected cell -> Row: %d, Col: %d, Value: %s\n", row, col, cell_value);
-//         } else {
-//             Serial.println("No cell selected!");
-//         }
-//     }
-// }
+  lv_scr_load(objects.add_finger_screen); // Pindah ke layar yang ditentukan
+}
+
+static void table_event_handler(lv_event_t *e) {
+  lv_obj_t * obj = (lv_obj_t *)lv_event_get_current_target_obj(e);
+  uint32_t col;
+  uint32_t row;
+  lv_table_get_selected_cell(obj, &row, &col);
+  Serial.print("Baris yang dipilih: ");
+  Serial.println(row);
+  Serial.print("Kolom yang dipilih: ");
+  Serial.println(col);
+  if(row > 0){
+    const char* cell_value = lv_table_get_cell_value(obj, row, 1);
+    // Mengonversi const char* menjadi String
+    if (cell_value != nullptr && strlen(cell_value) > 0) {  // Periksa apakah nilai tidak null dan tidak kosong
+      String cell_value_str = String(cell_value);  // Mengonversi const char* menjadi String
+      add_finger_screen_event_handler(cell_value_str);  // Panggil fungsi handler dengan nilai sel
+    } else {
+      Serial.println("Nilai sel kosong.");
+    }
+  }
+}
+
+static void checkin_event_handler(lv_event_t *e){
+  EventData* checkin = (EventData*)lv_event_get_user_data(e);
+
+  int id = checkin->id;
+  String type = checkin->type;
+
+  if(WiFi.status() == WL_CONNECTED){
+    HTTPClient http;
+    String serverPath = apiCheckin;
+    // Connect to the server
+    http.begin(serverPath.c_str());
+    // Set HTTP headers (for JSON)
+    http.addHeader("Content-Type", "application/json");
+
+    StaticJsonDocument<1024> doc;
+    doc["member_id"] = id;
+    doc["type"] = type;
+
+    String requestBody;
+    serializeJson(doc, requestBody);
+
+    // Send HTTP POST request
+    int httpResponseCode = http.POST(requestBody);
+
+     if (httpResponseCode > 0) {
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+
+      String payload = http.getString();
+      Serial.println("Received Payload:");
+      Serial.println(payload);
+
+      // Parse JSON payload
+      StaticJsonDocument<1024> responseDoc;
+      DeserializationError error = deserializeJson(responseDoc, payload);
+
+      if (!error) {
+        // Handle response (for example, extract data)
+        String responseMessage = responseDoc["message"].as<String>();
+        Serial.println("Response message: " + responseMessage);
+      } else {
+        Serial.print("JSON Deserialization failed: ");
+        Serial.println(error.c_str());
+      }
+    } else {
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
+    }
+  }
+}
 
 //________________________________________________________________________________ 
 void setup() {
@@ -185,6 +255,13 @@ void setup() {
   lv_obj_add_event_cb(objects.button_back_2, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_3, button_register_event_handler, LV_EVENT_CLICKED, NULL);
 
+  EventData* checkin = new EventData;
+  checkin->id = 1;
+  checkin->type = "checkin";
+
+  lv_obj_add_event_cb(objects.button_checkin, checkin_event_handler, LV_EVENT_CLICKED, checkin);
+  
+
   lv_table_set_col_cnt(objects.table, 2);
 
   lv_table_set_row_count(objects.table, 1);
@@ -233,8 +310,10 @@ void setup() {
           lv_table_set_cell_value(objects.table, row, 0, id.c_str());
           lv_table_set_cell_value(objects.table, row, 1, name.c_str());
 
+          
           row++; 
         }
+      lv_obj_add_event_cb(objects.table, table_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
       } else {
         Serial.print("JSON Deserialization failed: ");
         Serial.println(error.c_str());
@@ -250,7 +329,6 @@ void setup() {
     Serial.println("WiFi Disconnected");
   }
 
-  // lv_obj_add_event_cb(objects.table, table_event_handler, LV_EVENT_CLICKED, NULL);
 }
 
 void loop() {
