@@ -21,6 +21,10 @@ typedef struct _objects_t {
     lv_obj_t *obj1;
     lv_obj_t *button_back_2;
     lv_obj_t *button_checkin;
+    lv_obj_t *popup_attendance;
+    lv_obj_t *pic_success;
+    lv_obj_t *label_status;
+    lv_obj_t *pic_error;
     lv_obj_t *label_name_1;
     lv_obj_t *obj2;
     lv_obj_t *label_finger_name;

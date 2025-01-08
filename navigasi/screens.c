@@ -207,6 +207,51 @@ void create_screen_attendance_screen() {
                 }
             }
         }
+        {
+            // popup_attendance
+            lv_obj_t *obj = lv_obj_create(parent_obj);
+            objects.popup_attendance = obj;
+            lv_obj_set_pos(obj, 35, 79);
+            lv_obj_set_size(obj, 251, 136);
+            lv_obj_set_style_bg_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+            {
+                lv_obj_t *parent_obj = obj;
+                {
+                    // pic_success
+                    lv_obj_t *obj = lv_img_create(parent_obj);
+                    objects.pic_success = obj;
+                    lv_obj_set_pos(obj, 80, -7);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_img_set_src(obj, &img_icon_success);
+                }
+                {
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    lv_obj_set_pos(obj, 0, 84);
+                    lv_obj_set_size(obj, LV_PCT(100), LV_SIZE_CONTENT);
+                    lv_label_set_text(obj, "Name");
+                    lv_obj_set_style_text_font(obj, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+                }
+                {
+                    // label_status
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    objects.label_status = obj;
+                    lv_obj_set_pos(obj, 62, 57);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_label_set_text(obj, "Welcome");
+                    lv_obj_set_style_text_font(obj, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
+                }
+                {
+                    // pic_error
+                    lv_obj_t *obj = lv_img_create(parent_obj);
+                    objects.pic_error = obj;
+                    lv_obj_set_pos(obj, 80, -7);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_img_set_src(obj, &img_icon_fail);
+                    lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+                }
+            }
+        }
     }
 }
 

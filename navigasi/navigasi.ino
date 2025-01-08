@@ -186,6 +186,7 @@ static void checkin_event_handler(lv_event_t *e){
         // Handle response (for example, extract data)
         String responseMessage = responseDoc["message"].as<String>();
         Serial.println("Response message: " + responseMessage);
+        showPopup();
       } else {
         Serial.print("JSON Deserialization failed: ");
         Serial.println(error.c_str());
@@ -193,8 +194,34 @@ static void checkin_event_handler(lv_event_t *e){
     } else {
       Serial.print("Error code: ");
       Serial.println(httpResponseCode);
+      
+      showPopup();
+
+      // lv_obj_add_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
+      // lv_obj_remove_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
+      // lv_obj_remove_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
+
+      // if (lv_obj_has_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN)) {
+      //   Serial.println("Popup is hidden.");
+      // } else {
+      //     Serial.println("Popup is visible.");
+      // }
+      // delay(3000);
+      // lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
+      // lv_obj_remove_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
+      // lv_obj_add_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
     }
   }
+}
+
+void hidePopupCallback(lv_timer_t *timer) {
+    lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Sembunyikan panel
+    lv_timer_del(timer); // Hapus timer setelah selesai
+}
+
+void showPopup() {
+    lv_obj_clear_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Tampilkan panel
+    lv_timer_t *timer = lv_timer_create(hidePopupCallback, 3000, NULL); // Buat timer untuk menyembunyikan panel
 }
 
 //________________________________________________________________________________ 
@@ -254,6 +281,7 @@ void setup() {
   lv_obj_add_event_cb(objects.button_back_1, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_2, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_3, button_register_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
 
   EventData* checkin = new EventData;
   checkin->id = 1;
