@@ -181,13 +181,16 @@ static void checkin_event_handler(lv_event_t *e){
       // Parse JSON payload
       StaticJsonDocument<1024> responseDoc;
       DeserializationError error = deserializeJson(responseDoc, payload);
-
-      if (!error) {
+      String status = responseDoc["status"].as<String>();
+      if (status == "success") {
         // Handle response (for example, extract data)
         String responseMessage = responseDoc["message"].as<String>();
         Serial.println("Response message: " + responseMessage);
-        showPopup();
+        String name = responseDoc["member"]["name"].as<String>();
+        lv_label_set_text(objects.label_name_popup, name.c_str());
+        showPopupSuccess();
       } else {
+        showPopupError();
         Serial.print("JSON Deserialization failed: ");
         Serial.println(error.c_str());
       }
@@ -195,21 +198,7 @@ static void checkin_event_handler(lv_event_t *e){
       Serial.print("Error code: ");
       Serial.println(httpResponseCode);
       
-      showPopup();
-
-      // lv_obj_add_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
-      // lv_obj_remove_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
-      // lv_obj_remove_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
-
-      // if (lv_obj_has_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN)) {
-      //   Serial.println("Popup is hidden.");
-      // } else {
-      //     Serial.println("Popup is visible.");
-      // }
-      // delay(3000);
-      // lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
-      // lv_obj_remove_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
-      // lv_obj_add_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
+      showPopupError();
     }
   }
 }
@@ -219,9 +208,29 @@ void hidePopupCallback(lv_timer_t *timer) {
     lv_timer_del(timer); // Hapus timer setelah selesai
 }
 
-void showPopup() {
+void showPopupSuccess() {
+    String status = "Welcome";
+    lv_label_set_text(objects.label_status, status.c_str());
     lv_obj_clear_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Tampilkan panel
     lv_timer_t *timer = lv_timer_create(hidePopupCallback, 3000, NULL); // Buat timer untuk menyembunyikan panel
+}
+
+void hidePopupErrorCallback(lv_timer_t *timer) {
+    lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Sembunyikan panel
+    lv_obj_add_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(objects.label_name_popup, LV_OBJ_FLAG_HIDDEN);
+    lv_timer_del(timer); // Hapus timer setelah selesai
+}
+
+void showPopupError() {
+    lv_obj_clear_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(objects.label_name_popup, LV_OBJ_FLAG_HIDDEN);
+    String status = "Error";
+    lv_label_set_text(objects.label_status, status.c_str());
+    lv_obj_clear_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Tampilkan panel
+    lv_timer_t *timer = lv_timer_create(hidePopupErrorCallback, 3000, NULL); // Buat timer untuk menyembunyikan panel
 }
 
 //________________________________________________________________________________ 
@@ -338,7 +347,6 @@ void setup() {
           lv_table_set_cell_value(objects.table, row, 0, id.c_str());
           lv_table_set_cell_value(objects.table, row, 1, name.c_str());
 
-          
           row++; 
         }
       lv_obj_add_event_cb(objects.table, table_event_handler, LV_EVENT_VALUE_CHANGED, NULL);

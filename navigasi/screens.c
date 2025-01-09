@@ -225,7 +225,9 @@ void create_screen_attendance_screen() {
                     lv_img_set_src(obj, &img_icon_success);
                 }
                 {
+                    // label_name_popup
                     lv_obj_t *obj = lv_label_create(parent_obj);
+                    objects.label_name_popup = obj;
                     lv_obj_set_pos(obj, 0, 84);
                     lv_obj_set_size(obj, LV_PCT(100), LV_SIZE_CONTENT);
                     lv_label_set_text(obj, "Name");
@@ -236,10 +238,12 @@ void create_screen_attendance_screen() {
                     // label_status
                     lv_obj_t *obj = lv_label_create(parent_obj);
                     objects.label_status = obj;
-                    lv_obj_set_pos(obj, 62, 57);
-                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_obj_set_pos(obj, 0, 57);
+                    lv_obj_set_size(obj, LV_PCT(100), 22);
                     lv_label_set_text(obj, "Welcome");
                     lv_obj_set_style_text_font(obj, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_align(obj, LV_ALIGN_DEFAULT, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
                 }
                 {
                     // pic_error
