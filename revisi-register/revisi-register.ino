@@ -11,7 +11,7 @@ const char* ssid = "enumatechz";
 const char* password = "3numaTechn0l0gy";
 
 //Your Domain name with URL path or IP address with path
-String serverName = "http://192.168.1.16:8080/api/members";
+String serverName = "http://192.168.1.16:8080/api/users";
 String apiCheckin = "http://192.168.1.16:8080/api/attendance";
 
 // Defines the T_CS Touchscreen PIN.
@@ -125,95 +125,89 @@ static void button_verification_event_handler(lv_event_t * e) {
   }
 }
 
-static void add_finger_screen_event_handler(const String& name) {
-  // Menggunakan *name untuk mengakses nilai yang ditunjuk oleh pointer
-  String labelText = name; // Gabungkan nama dengan string
-  lv_label_set_text(objects.label_finger_name, labelText.c_str()); // Gunakan c_str() untuk mengonversi String ke const char*
+// static void add_finger_screen_event_handler(const String& name) {
+//   // Menggunakan *name untuk mengakses nilai yang ditunjuk oleh pointer
+//   String labelText = name; // Gabungkan nama dengan string
+//   lv_label_set_text(objects.label_finger_name, labelText.c_str()); // Gunakan c_str() untuk mengonversi String ke const char*
 
-  lv_scr_load(objects.add_finger_screen); // Pindah ke layar yang ditentukan
-}
+//   lv_scr_load(objects.add_finger_screen); // Pindah ke layar yang ditentukan
+// }
 
-static void table_event_handler(lv_event_t *e) {
-  lv_obj_t * obj = (lv_obj_t *)lv_event_get_current_target_obj(e);
-  uint32_t col;
-  uint32_t row;
-  lv_table_get_selected_cell(obj, &row, &col);
-  Serial.print("Baris yang dipilih: ");
-  Serial.println(row);
-  Serial.print("Kolom yang dipilih: ");
-  Serial.println(col);
-  if(row > 0){
-    const char* cell_value = lv_table_get_cell_value(obj, row, 1);
-    // Mengonversi const char* menjadi String
-    if (cell_value != nullptr && strlen(cell_value) > 0) {  // Periksa apakah nilai tidak null dan tidak kosong
-      String cell_value_str = String(cell_value);  // Mengonversi const char* menjadi String
-      add_finger_screen_event_handler(cell_value_str);  // Panggil fungsi handler dengan nilai sel
-    } else {
-      Serial.println("Nilai sel kosong.");
-    }
-  }
-}
-
-// static void get_table_data(){
-//   // Get data from the server
-//   if (WiFi.status() == WL_CONNECTED) {
-//     HTTPClient http;
-
-//     // Build server path
-//     String serverPath = serverName;
-
-//     // Connect to the server
-//     http.begin(serverPath.c_str());
-
-//     // Send HTTP GET request
-//     int httpResponseCode = http.GET();
-
-//     if (httpResponseCode > 0) {
-//       Serial.print("HTTP Response code: ");
-//       Serial.println(httpResponseCode);
-
-//       String payload = http.getString();
-//       Serial.println("Received Payload:");
-//       // Serial.println(payload);
-
-//       // Parse JSON payload
-//       StaticJsonDocument<1024> doc;  // Adjust buffer size as needed
-//       DeserializationError error = deserializeJson(doc, payload);
-
-//       if (!error) {
-//         // Extract members array
-//         JsonArray members = doc["members"].as<JsonArray>();
-
-//         lv_table_set_row_count(objects.table, members.size() + 1);
-
-//         // Loop through the members array and insert values into the table
-//         int row = 1; // Start from row 1, as row 0 is for headers
-//         for (JsonObject member : members) {
-//           String id = member["id"].as<String>();
-//           String name = member["name"].as<String>();
-
-//           // Insert ID and Name into the table
-//           lv_table_set_cell_value(objects.table, row, 0, id.c_str());
-//           lv_table_set_cell_value(objects.table, row, 1, name.c_str());
-
-//           row++; 
-//         }
-//       lv_obj_add_event_cb(objects.table, table_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
-//       } else {
-//         Serial.print("JSON Deserialization failed: ");
-//         Serial.println(error.c_str());
-//       }
+// static void table_event_handler(lv_event_t *e) {
+//   lv_obj_t * obj = (lv_obj_t *)lv_event_get_current_target_obj(e);
+//   uint32_t col;
+//   uint32_t row;
+//   lv_table_get_selected_cell(obj, &row, &col);
+//   Serial.print("Baris yang dipilih: ");
+//   Serial.println(row);
+//   Serial.print("Kolom yang dipilih: ");
+//   Serial.println(col);
+//   if(row > 0){
+//     const char* cell_value = lv_table_get_cell_value(obj, row, 1);
+//     // Mengonversi const char* menjadi String
+//     if (cell_value != nullptr && strlen(cell_value) > 0) {  // Periksa apakah nilai tidak null dan tidak kosong
+//       String cell_value_str = String(cell_value);  // Mengonversi const char* menjadi String
+//       add_finger_screen_event_handler(cell_value_str);  // Panggil fungsi handler dengan nilai sel
 //     } else {
-//       Serial.print("Error code: ");
-//       Serial.println(httpResponseCode);
+//       Serial.println("Nilai sel kosong.");
 //     }
-
-//     // Free resources
-//     http.end();
-//   } else {
-//     Serial.println("WiFi Disconnected");
 //   }
 // }
+
+static void get_table_data(String id){
+  // Get data from the server
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+
+    // Build server path
+    String serverPath = serverName + "/" + id;
+
+    // Connect to the server
+    http.begin(serverPath.c_str());
+
+    // Send HTTP GET request
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0) {
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+
+      String payload = http.getString();
+      Serial.println("Received Payload:");
+      // Serial.println(payload);
+
+      // Parse JSON payload
+      StaticJsonDocument<1024> doc;  // Adjust buffer size as needed
+      DeserializationError error = deserializeJson(doc, payload);
+
+      if (!error) {
+        // Extract members array
+
+        String name = doc["users"]["name"].as<String>();
+        String category = doc["users"]["category_name"].as<String>();
+
+        // Insert ID and Name into the table
+        lv_table_set_cell_value(objects.table_user, 1, 0, id.c_str());
+        lv_table_set_cell_value(objects.table_user, 1, 1, name.c_str());
+        lv_table_set_cell_value(objects.table_user, 1, 2, category.c_str());
+
+        
+        lv_scr_load(objects.add_finger_screen);
+      } else {
+        Serial.print("JSON Deserialization failed: ");
+        Serial.println(error.c_str());
+      }
+    } else {
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
+    }
+
+    // Free resources
+    http.end();
+  } else {
+    Serial.println("WiFi Disconnected");
+  }
+}
 
 static void checkin_event_handler(lv_event_t *e){
   EventData* checkin = (EventData*)lv_event_get_user_data(e);
@@ -230,8 +224,7 @@ static void checkin_event_handler(lv_event_t *e){
     http.addHeader("Content-Type", "application/json");
 
     StaticJsonDocument<1024> doc;
-    doc["member_id"] = id;
-    doc["type"] = type;
+    doc["user_id"] = id;
 
     String requestBody;
     serializeJson(doc, requestBody);
@@ -255,9 +248,14 @@ static void checkin_event_handler(lv_event_t *e){
         // Handle response (for example, extract data)
         String responseMessage = responseDoc["message"].as<String>();
         Serial.println("Response message: " + responseMessage);
-        String name = responseDoc["member"]["name"].as<String>();
+        String name = responseDoc["user"]["name"].as<String>();
         lv_label_set_text(objects.label_name_popup, name.c_str());
-        showPopupSuccess();
+        String type = responseDoc["data"]["status"].as<String>();
+        if(type=="departed"){
+          showPopupSuccess("Goodbye");
+        }else{
+          showPopupSuccess("Welcome");
+        }
       } else {
         showPopupError();
         Serial.print("JSON Deserialization failed: ");
@@ -277,8 +275,7 @@ void hidePopupCallback(lv_timer_t *timer) {
     lv_timer_del(timer); // Hapus timer setelah selesai
 }
 
-void showPopupSuccess() {
-    String status = "Welcome";
+void showPopupSuccess(String status) {
     lv_label_set_text(objects.label_status, status.c_str());
     lv_obj_clear_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Tampilkan panel
     lv_timer_t *timer = lv_timer_create(hidePopupCallback, 3000, NULL); // Buat timer untuk menyembunyikan panel
@@ -322,6 +319,15 @@ static void password_event_handler(lv_event_t *e){
     }
     lv_textarea_set_text(objects.input_password, ""); 
   }
+}
+
+static void get_user_event_handler(lv_event_t *e){
+    int btn_index = lv_keyboard_get_selected_btn(objects.keyboard_id);
+    if(btn_index == 11){
+      String id = lv_textarea_get_text(objects.input_id);
+      get_table_data(id);
+      lv_textarea_set_text(objects.input_id, "");
+    }
 }
 
 
@@ -386,12 +392,24 @@ void setup() {
   lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
 
   EventData* checkin = new EventData;
-  checkin->id = 1;
-  checkin->type = "checkin";
+  checkin->id = 3;
 
   lv_obj_add_event_cb(objects.button_checkin, checkin_event_handler, LV_EVENT_CLICKED, checkin);
 
   lv_obj_add_event_cb(objects.keyboard_password, password_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.keyboard_id, get_user_event_handler, LV_EVENT_CLICKED, NULL);
+
+  lv_table_set_col_cnt(objects.table_user, 3);
+  lv_table_set_col_width(objects.table_user, 0, 60); 
+  lv_table_set_col_width(objects.table_user, 1, 140); 
+  lv_table_set_col_width(objects.table_user, 2, 110); 
+
+  lv_table_set_row_count(objects.table_user, 2);
+  lv_obj_set_style_text_font(objects.table_user, &lv_font_montserrat_12, LV_PART_ITEMS | LV_STATE_DEFAULT);
+
+  lv_table_set_cell_value(objects.table_user, 0, 0, "ID");
+  lv_table_set_cell_value(objects.table_user, 0, 1, "Name");
+  lv_table_set_cell_value(objects.table_user, 0, 2, "Category");
 }
 
 void loop() {
