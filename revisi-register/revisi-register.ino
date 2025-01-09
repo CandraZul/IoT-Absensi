@@ -98,7 +98,7 @@ void touchscreen_read(lv_indev_t * indev, lv_indev_data_t * data) {
 static void button_register_event_handler(lv_event_t * e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
     Serial.println("pindah ke reg");
-    get_table_data();
+    // get_table_data();
     lv_scr_load(objects.reg_screen);  // Go to Register screen.
   }
 }
@@ -115,6 +115,13 @@ static void button_home_event_handler(lv_event_t * e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
     Serial.println("kembali ke home");
     lv_scr_load(objects.main);  // Go to Register screen.
+  }
+}
+
+static void button_verification_event_handler(lv_event_t * e) {
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+    Serial.println("kembali ke home");
+    lv_scr_load(objects.verification_screen);  // Go to Register screen.
   }
 }
 
@@ -147,66 +154,66 @@ static void table_event_handler(lv_event_t *e) {
   }
 }
 
-static void get_table_data(){
-  // Get data from the server
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
+// static void get_table_data(){
+//   // Get data from the server
+//   if (WiFi.status() == WL_CONNECTED) {
+//     HTTPClient http;
 
-    // Build server path
-    String serverPath = serverName;
+//     // Build server path
+//     String serverPath = serverName;
 
-    // Connect to the server
-    http.begin(serverPath.c_str());
+//     // Connect to the server
+//     http.begin(serverPath.c_str());
 
-    // Send HTTP GET request
-    int httpResponseCode = http.GET();
+//     // Send HTTP GET request
+//     int httpResponseCode = http.GET();
 
-    if (httpResponseCode > 0) {
-      Serial.print("HTTP Response code: ");
-      Serial.println(httpResponseCode);
+//     if (httpResponseCode > 0) {
+//       Serial.print("HTTP Response code: ");
+//       Serial.println(httpResponseCode);
 
-      String payload = http.getString();
-      Serial.println("Received Payload:");
-      // Serial.println(payload);
+//       String payload = http.getString();
+//       Serial.println("Received Payload:");
+//       // Serial.println(payload);
 
-      // Parse JSON payload
-      StaticJsonDocument<1024> doc;  // Adjust buffer size as needed
-      DeserializationError error = deserializeJson(doc, payload);
+//       // Parse JSON payload
+//       StaticJsonDocument<1024> doc;  // Adjust buffer size as needed
+//       DeserializationError error = deserializeJson(doc, payload);
 
-      if (!error) {
-        // Extract members array
-        JsonArray members = doc["members"].as<JsonArray>();
+//       if (!error) {
+//         // Extract members array
+//         JsonArray members = doc["members"].as<JsonArray>();
 
-        lv_table_set_row_count(objects.table, members.size() + 1);
+//         lv_table_set_row_count(objects.table, members.size() + 1);
 
-        // Loop through the members array and insert values into the table
-        int row = 1; // Start from row 1, as row 0 is for headers
-        for (JsonObject member : members) {
-          String id = member["id"].as<String>();
-          String name = member["name"].as<String>();
+//         // Loop through the members array and insert values into the table
+//         int row = 1; // Start from row 1, as row 0 is for headers
+//         for (JsonObject member : members) {
+//           String id = member["id"].as<String>();
+//           String name = member["name"].as<String>();
 
-          // Insert ID and Name into the table
-          lv_table_set_cell_value(objects.table, row, 0, id.c_str());
-          lv_table_set_cell_value(objects.table, row, 1, name.c_str());
+//           // Insert ID and Name into the table
+//           lv_table_set_cell_value(objects.table, row, 0, id.c_str());
+//           lv_table_set_cell_value(objects.table, row, 1, name.c_str());
 
-          row++; 
-        }
-      lv_obj_add_event_cb(objects.table, table_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
-      } else {
-        Serial.print("JSON Deserialization failed: ");
-        Serial.println(error.c_str());
-      }
-    } else {
-      Serial.print("Error code: ");
-      Serial.println(httpResponseCode);
-    }
+//           row++; 
+//         }
+//       lv_obj_add_event_cb(objects.table, table_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+//       } else {
+//         Serial.print("JSON Deserialization failed: ");
+//         Serial.println(error.c_str());
+//       }
+//     } else {
+//       Serial.print("Error code: ");
+//       Serial.println(httpResponseCode);
+//     }
 
-    // Free resources
-    http.end();
-  } else {
-    Serial.println("WiFi Disconnected");
-  }
-}
+//     // Free resources
+//     http.end();
+//   } else {
+//     Serial.println("WiFi Disconnected");
+//   }
+// }
 
 static void checkin_event_handler(lv_event_t *e){
   EventData* checkin = (EventData*)lv_event_get_user_data(e);
@@ -295,6 +302,29 @@ void showPopupError() {
     lv_timer_t *timer = lv_timer_create(hidePopupErrorCallback, 3000, NULL); // Buat timer untuk menyembunyikan panel
 }
 
+void hidePopupVerification(lv_timer_t *timer){
+  lv_obj_add_flag(objects.popup_verification, LV_OBJ_FLAG_HIDDEN);
+  lv_timer_del(timer);
+}
+
+static void password_event_handler(lv_event_t *e){
+  int btn_index = lv_keyboard_get_selected_btn(objects.keyboard_password);
+  String password = lv_textarea_get_text(objects.input_password);
+  Serial.println(btn_index);
+  Serial.println(password);
+  if(btn_index == 11){
+    if(password == "123456"){
+      lv_scr_load(objects.reg_screen);
+    }else{
+      Serial.print("pasword salah");
+      lv_obj_clear_flag(objects.popup_verification, LV_OBJ_FLAG_HIDDEN);
+      lv_timer_t *timer = lv_timer_create(hidePopupVerification, 1000, NULL);
+    }
+    lv_textarea_set_text(objects.input_password, ""); 
+  }
+}
+
+
 //________________________________________________________________________________ 
 void setup() {
   Serial.begin(115200);
@@ -347,11 +377,12 @@ void setup() {
   ui_init();
 
   // Register button event handlers
-  lv_obj_add_event_cb(objects.button_register, button_register_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.button_register, button_verification_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_attendance, button_attendance_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_1, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_2, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_3, button_register_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.button_back_4, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
 
   EventData* checkin = new EventData;
@@ -359,14 +390,8 @@ void setup() {
   checkin->type = "checkin";
 
   lv_obj_add_event_cb(objects.button_checkin, checkin_event_handler, LV_EVENT_CLICKED, checkin);
-  
 
-  lv_table_set_col_cnt(objects.table, 2);
-
-  lv_table_set_row_count(objects.table, 1);
-
-  lv_table_set_cell_value(objects.table, 0, 0, "ID");
-  lv_table_set_cell_value(objects.table, 0, 1, "Name");
+  lv_obj_add_event_cb(objects.keyboard_password, password_event_handler, LV_EVENT_CLICKED, NULL);
 }
 
 void loop() {

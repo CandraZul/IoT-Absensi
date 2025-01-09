@@ -1,0 +1,18 @@
+            static const char * kb_map[] = {
+                "1", "2", "3", "\n",
+                "4", "5", "6", "\n",
+                "7", "8", "9", "\n",
+                LV_SYMBOL_BACKSPACE, "0", LV_SYMBOL_OK, 
+                NULL
+            };
+
+            /* Set the relative width of the buttons and other controls */
+            static const lv_buttonmatrix_ctrl_t kb_ctrl[] = {
+                4, 4, 4,      // Row 1: "1", "2", "3", Backspace
+                4, 4, 4,      // Row 2: "4", "5", "6", New Line
+                4, 4, 4,      // Row 3: "7", "8", "9", New Line
+                4, 4, 4,      // Row 4: "0", ".", Close, OK
+            };
+
+            lv_keyboard_set_map(obj, LV_KEYBOARD_MODE_USER_1, kb_map, kb_ctrl);
+            lv_keyboard_set_mode(obj, LV_KEYBOARD_MODE_USER_1);
