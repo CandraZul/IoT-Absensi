@@ -126,7 +126,7 @@ void create_screen_attendance_screen() {
                     lv_obj_set_pos(obj, 0, 84);
                     lv_obj_set_size(obj, LV_PCT(100), LV_SIZE_CONTENT);
                     lv_label_set_text(obj, "Name");
-                    lv_obj_set_style_text_font(obj, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
                     lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
                 }
                 {
@@ -250,6 +250,7 @@ void create_screen_reg_screen() {
         }
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.label_input_member = obj;
             lv_obj_set_pos(obj, 0, 42);
             lv_obj_set_size(obj, LV_PCT(100), LV_SIZE_CONTENT);
             lv_label_set_text(obj, "Input Member ID");

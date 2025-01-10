@@ -25,6 +25,7 @@ typedef struct _objects_t {
     lv_obj_t *button_register;
     lv_obj_t *button_attendance;
     lv_obj_t *obj1;
+    lv_obj_t *label_input_member;
     lv_obj_t *button_back_1;
     lv_obj_t *input_id;
     lv_obj_t *keyboard_id;

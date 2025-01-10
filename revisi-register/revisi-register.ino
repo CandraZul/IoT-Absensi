@@ -11,8 +11,8 @@ const char* ssid = "enumatechz";
 const char* password = "3numaTechn0l0gy";
 
 //Your Domain name with URL path or IP address with path
-String serverName = "http://192.168.1.16:8080/api/users";
-String apiCheckin = "http://192.168.1.16:8080/api/attendance";
+String serverName = "http://192.168.1.6:8080/api/users";
+String apiCheckin = "http://192.168.1.6:8080/api/attendance";
 
 // Defines the T_CS Touchscreen PIN.
 #define T_CS_PIN  13 //--> T_CS
@@ -99,6 +99,8 @@ static void button_register_event_handler(lv_event_t * e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
     Serial.println("pindah ke reg");
     // get_table_data();
+    String status = "Input Member ID";
+    lv_label_set_text(objects.label_input_member, status.c_str());
     lv_scr_load(objects.reg_screen);  // Go to Register screen.
   }
 }
@@ -182,17 +184,21 @@ static void get_table_data(String id){
 
       if (!error) {
         // Extract members array
-
         String name = doc["users"]["name"].as<String>();
         String category = doc["users"]["category_name"].as<String>();
+        if(name != "null"){
+          // Insert ID and Name into the table
+          lv_table_set_cell_value(objects.table_user, 1, 0, id.c_str());
+          lv_table_set_cell_value(objects.table_user, 1, 1, name.c_str());
+          lv_table_set_cell_value(objects.table_user, 1, 2, category.c_str());
 
-        // Insert ID and Name into the table
-        lv_table_set_cell_value(objects.table_user, 1, 0, id.c_str());
-        lv_table_set_cell_value(objects.table_user, 1, 1, name.c_str());
-        lv_table_set_cell_value(objects.table_user, 1, 2, category.c_str());
+          
+          lv_scr_load(objects.add_finger_screen);
+        }else{
+          String status = "Member Not Found";
+          lv_label_set_text(objects.label_input_member, status.c_str());
+        }
 
-        
-        lv_scr_load(objects.add_finger_screen);
       } else {
         Serial.print("JSON Deserialization failed: ");
         Serial.println(error.c_str());
@@ -257,15 +263,16 @@ static void checkin_event_handler(lv_event_t *e){
           showPopupSuccess("Welcome");
         }
       } else {
-        showPopupError();
+        String status = responseDoc["message"];
+        showPopupError(status);
         Serial.print("JSON Deserialization failed: ");
         Serial.println(error.c_str());
       }
     } else {
       Serial.print("Error code: ");
       Serial.println(httpResponseCode);
-      
-      showPopupError();
+      String status = "Problem with server";
+      showPopupError(status);
     }
   }
 }
@@ -289,10 +296,10 @@ void hidePopupErrorCallback(lv_timer_t *timer) {
     lv_timer_del(timer); // Hapus timer setelah selesai
 }
 
-void showPopupError() {
+void showPopupError(String message) {
     lv_obj_clear_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(objects.label_name_popup, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(objects.label_name_popup, message.c_str());
     String status = "Error";
     lv_label_set_text(objects.label_status, status.c_str());
     lv_obj_clear_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Tampilkan panel
@@ -311,6 +318,8 @@ static void password_event_handler(lv_event_t *e){
   Serial.println(password);
   if(btn_index == 11){
     if(password == "123456"){
+      String status = "Input Member ID";
+      lv_label_set_text(objects.label_input_member, status.c_str());
       lv_scr_load(objects.reg_screen);
     }else{
       Serial.print("pasword salah");
@@ -392,7 +401,7 @@ void setup() {
   lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
 
   EventData* checkin = new EventData;
-  checkin->id = 3;
+  checkin->id = 1;
 
   lv_obj_add_event_cb(objects.button_checkin, checkin_event_handler, LV_EVENT_CLICKED, checkin);
 
