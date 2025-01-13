@@ -5,7 +5,8 @@
 #include "ui.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <ArduinoJson.h> 
+#include <ArduinoJson.h>
+#include <Adafruit_Fingerprint.h> 
 
 const char* ssid = "enumatechz";
 const char* password = "3numaTechn0l0gy";
@@ -33,6 +34,10 @@ String apiCheckin = "http://192.168.1.6:8080/api/attendance";
 
 // LVGL draw into this buffer, 1/10 screen size usually works well.
 #define DRAW_BUF_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT / 10 * (LV_COLOR_DEPTH / 8))
+
+HardwareSerial mySerial(2); // UART2 untuk ESP32
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
+
 uint8_t *draw_buf;
 
 uint32_t lastTick = 0;
@@ -339,10 +344,53 @@ static void get_user_event_handler(lv_event_t *e){
     }
 }
 
+uint8_t getFingerprintID() {
+  uint8_t p = finger.getImage();
+  if (p == FINGERPRINT_NOFINGER) {
+    return p;
+  }
+
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Image taken");
+  } else {
+    Serial.println("Error taking image");
+    return p;
+  }
+
+  p = finger.image2Tz();
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Image converted");
+  } else {
+    Serial.println("Error converting image");
+    return p;
+  }
+
+  p = finger.fingerSearch();
+  if (p == FINGERPRINT_OK) {
+    Serial.print("Found ID #");
+    Serial.print(finger.fingerID);
+    Serial.print(" with confidence ");
+    Serial.println(finger.confidence);
+  } else {
+    Serial.println("No match found");
+  }
+
+  return p;
+}
+
 
 //________________________________________________________________________________ 
 void setup() {
   Serial.begin(115200);
+  mySerial.begin(57600, SERIAL_8N1, 22, 27); // RX=22, TX=27 (sesuaikan dengan pin Anda)
+
+  if (finger.verifyPassword()) {
+    Serial.println("Found fingerprint sensor!");
+  } else {
+    Serial.println("Did not find fingerprint sensor :(");
+    while (1) { delay(1); }
+  }
+
   WiFi.begin(ssid, password);
   Serial.println("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
@@ -425,5 +473,10 @@ void loop() {
   lv_tick_inc(millis() - lastTick); // Update the tick timer.
   lastTick = millis();
   lv_timer_handler(); // Update the UI.
+
+  if(lv_scr_act() == objects.attendance_screen){
+    Serial.println("halaman attendance");
+  }
+
   delay(5);
 }
