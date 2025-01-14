@@ -12,8 +12,9 @@ const char* ssid = "enumatechz";
 const char* password = "3numaTechn0l0gy";
 
 //Your Domain name with URL path or IP address with path
-String serverName = "http://192.168.1.6:8080/api/users";
-String apiCheckin = "http://192.168.1.6:8080/api/attendance";
+String serverName = "http://192.168.1.14:8080/api/users";
+String apiCheckin = "http://192.168.1.14:8080/api/attendance";
+String authToken = "jgk0advefk90gj4ngin4290";
 
 // Defines the T_CS Touchscreen PIN.
 #define T_CS_PIN  13 //--> T_CS
@@ -30,8 +31,6 @@ String apiCheckin = "http://192.168.1.6:8080/api/attendance";
 #define XPT2046_CLK 25   // T_CLK
 #define XPT2046_CS 33    // T_CS
 
-#define LED_PIN 27
-
 // LVGL draw into this buffer, 1/10 screen size usually works well.
 #define DRAW_BUF_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT / 10 * (LV_COLOR_DEPTH / 8))
 
@@ -46,10 +45,7 @@ uint32_t lastTick = 0;
 SPIClass touchscreenSPI = SPIClass(VSPI);
 XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
 
-struct EventData {
-  int id;
-  String type;
-};
+int finger_id;
 
 //________________________________________________________________________________ 
 // If logging is enabled, it will inform the user about what is happening in the library.
@@ -132,34 +128,6 @@ static void button_verification_event_handler(lv_event_t * e) {
   }
 }
 
-// static void add_finger_screen_event_handler(const String& name) {
-//   // Menggunakan *name untuk mengakses nilai yang ditunjuk oleh pointer
-//   String labelText = name; // Gabungkan nama dengan string
-//   lv_label_set_text(objects.label_finger_name, labelText.c_str()); // Gunakan c_str() untuk mengonversi String ke const char*
-
-//   lv_scr_load(objects.add_finger_screen); // Pindah ke layar yang ditentukan
-// }
-
-// static void table_event_handler(lv_event_t *e) {
-//   lv_obj_t * obj = (lv_obj_t *)lv_event_get_current_target_obj(e);
-//   uint32_t col;
-//   uint32_t row;
-//   lv_table_get_selected_cell(obj, &row, &col);
-//   Serial.print("Baris yang dipilih: ");
-//   Serial.println(row);
-//   Serial.print("Kolom yang dipilih: ");
-//   Serial.println(col);
-//   if(row > 0){
-//     const char* cell_value = lv_table_get_cell_value(obj, row, 1);
-//     // Mengonversi const char* menjadi String
-//     if (cell_value != nullptr && strlen(cell_value) > 0) {  // Periksa apakah nilai tidak null dan tidak kosong
-//       String cell_value_str = String(cell_value);  // Mengonversi const char* menjadi String
-//       add_finger_screen_event_handler(cell_value_str);  // Panggil fungsi handler dengan nilai sel
-//     } else {
-//       Serial.println("Nilai sel kosong.");
-//     }
-//   }
-// }
 
 static void get_table_data(String id){
   // Get data from the server
@@ -171,6 +139,7 @@ static void get_table_data(String id){
 
     // Connect to the server
     http.begin(serverPath.c_str());
+    http.addHeader("Authorization", authToken);
 
     // Send HTTP GET request
     int httpResponseCode = http.GET();
@@ -191,6 +160,7 @@ static void get_table_data(String id){
         // Extract members array
         String name = doc["users"]["name"].as<String>();
         String category = doc["users"]["category_name"].as<String>();
+        finger_id = doc["users"]["id_fingerprint"].as<int>();
         if(name != "null"){
           // Insert ID and Name into the table
           lv_table_set_cell_value(objects.table_user, 1, 0, id.c_str());
@@ -220,11 +190,7 @@ static void get_table_data(String id){
   }
 }
 
-static void checkin_event_handler(lv_event_t *e){
-  EventData* checkin = (EventData*)lv_event_get_user_data(e);
-
-  int id = checkin->id;
-  String type = checkin->type;
+static void checkin_event_handler(uint8_t id){
 
   if(WiFi.status() == WL_CONNECTED){
     HTTPClient http;
@@ -239,6 +205,7 @@ static void checkin_event_handler(lv_event_t *e){
 
     String requestBody;
     serializeJson(doc, requestBody);
+    http.addHeader("Authorization", authToken);
 
     // Send HTTP POST request
     int httpResponseCode = http.POST(requestBody);
@@ -274,10 +241,10 @@ static void checkin_event_handler(lv_event_t *e){
         Serial.println(error.c_str());
       }
     } else {
-      Serial.print("Error code: ");
-      Serial.println(httpResponseCode);
       String status = "Problem with server";
       showPopupError(status);
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
     }
   }
 }
@@ -316,6 +283,31 @@ void hidePopupVerification(lv_timer_t *timer){
   lv_timer_del(timer);
 }
 
+void hidePopupRegister(lv_timer_t *timer) {
+    lv_obj_add_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN); // Sembunyikan panel
+    lv_timer_del(timer); // Hapus timer setelah selesai
+}
+
+void showPopupRegister(String status, bool success) {
+  if(success){
+    status = "Success";
+    lv_label_set_text(objects.label_status_register, status.c_str());
+    lv_label_set_text(objects.label_name_popup_register, ""); 
+    lv_obj_clear_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN); 
+    lv_obj_add_flag(objects.pic_error_register, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(objects.pic_success_register, LV_OBJ_FLAG_HIDDEN);
+    lv_timer_t *timer = lv_timer_create(hidePopupRegister, 3000, NULL); 
+  }else{
+    String title = "Failed";
+    lv_label_set_text(objects.label_status_register, title.c_str());
+    lv_label_set_text(objects.label_name_popup_register, status.c_str()); 
+    lv_obj_clear_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN); 
+    lv_obj_clear_flag(objects.pic_error_register, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(objects.pic_success_register, LV_OBJ_FLAG_HIDDEN);
+    lv_timer_t *timer = lv_timer_create(hidePopupRegister, 3000, NULL); 
+  }
+}
+
 static void password_event_handler(lv_event_t *e){
   int btn_index = lv_keyboard_get_selected_btn(objects.keyboard_password);
   String password = lv_textarea_get_text(objects.input_password);
@@ -346,23 +338,13 @@ static void get_user_event_handler(lv_event_t *e){
 
 uint8_t getFingerprintID() {
   uint8_t p = finger.getImage();
-  if (p == FINGERPRINT_NOFINGER) {
-    return p;
-  }
-
-  if (p == FINGERPRINT_OK) {
-    Serial.println("Image taken");
-  } else {
-    Serial.println("Error taking image");
+  if (p != FINGERPRINT_OK) {
     return p;
   }
 
   p = finger.image2Tz();
-  if (p == FINGERPRINT_OK) {
+  if (p != FINGERPRINT_OK) {
     Serial.println("Image converted");
-  } else {
-    Serial.println("Error converting image");
-    return p;
   }
 
   p = finger.fingerSearch();
@@ -371,18 +353,168 @@ uint8_t getFingerprintID() {
     Serial.print(finger.fingerID);
     Serial.print(" with confidence ");
     Serial.println(finger.confidence);
+    checkin_event_handler(finger.fingerID);
   } else {
+    String status = "Not found ID";
     Serial.println("No match found");
+    showPopupError(status);
   }
-
   return p;
 }
 
+uint8_t getFingerprintEnroll(int id) {
+  int p = -1;
+  Serial.print("Waiting for valid finger to enroll as #"); Serial.println(id);
+  p = finger.getImage();
+  if (p != FINGERPRINT_OK) {
+    return p;
+  }
+
+  // OK success!
+
+  p = finger.image2Tz(1);
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image converted");
+      break;
+    case FINGERPRINT_IMAGEMESS:
+      Serial.println("Image too messy");
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      return p;
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    default:
+      Serial.println("Unknown error");
+      return p;
+  }
+
+  Serial.println("Remove finger");
+  delay(2000);
+  p = 0;
+  while (p != FINGERPRINT_NOFINGER) {
+    p = finger.getImage();
+  }
+  Serial.print("ID "); Serial.println(id);
+  p = -1;
+  Serial.println("Place same finger again");
+  unsigned long startTime = millis(); // Catat waktu mulai
+  showPopupRegister("Image taken, place the same finger again", true);
+  while (p != FINGERPRINT_OK) {
+      lv_tick_inc(millis() - lastTick); // Update the tick timer.
+      lastTick = millis();
+      lv_timer_handler();
+      p = finger.getImage();
+
+      // Periksa waktu yang telah berlalu
+      if (millis() - startTime > 6000) {
+          Serial.println("Timeout reached: 6 seconds");
+          showPopupRegister("Operation timed out. Try again.", false);
+          break; // Keluar dari loop setelah 6 detik
+      }
+
+      switch (p) {
+      case FINGERPRINT_OK:
+          Serial.println("Image taken");
+          break;
+      case FINGERPRINT_NOFINGER:
+          Serial.print(".");
+          break;
+      case FINGERPRINT_PACKETRECIEVEERR:
+          Serial.println("Communication error");
+          break;
+      case FINGERPRINT_IMAGEFAIL:
+          Serial.println("Imaging error");
+          break;
+      default:
+          Serial.println("Unknown error");
+          break;
+      }
+      delay(5);
+  }
+  // OK success!
+
+  p = finger.image2Tz(2);
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image converted");
+      break;
+    case FINGERPRINT_IMAGEMESS:
+      Serial.println("Image too messy");
+      showPopupRegister("Fingerprint too messy", false);
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      return p;
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    default:
+      Serial.println("Unknown error");
+      return p;
+  }
+
+  // OK converted!
+  Serial.print("Creating model for #");  Serial.println(id);
+
+  p = finger.createModel();
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Prints matched!");
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    return p;
+  } else if (p == FINGERPRINT_ENROLLMISMATCH) {
+    Serial.println("Fingerprints did not match");
+    return p;
+  } else {
+    Serial.println("Unknown error");
+    return p;
+  }
+
+  Serial.print("ID "); Serial.println(id);
+  p = finger.storeModel(id);
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Stored!");
+    showPopupRegister("Stored", true);
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    return p;
+  } else if (p == FINGERPRINT_BADLOCATION) {
+    Serial.println("Could not store in that location");
+    return p;
+  } else if (p == FINGERPRINT_FLASHERR) {
+    Serial.println("Error writing to flash");
+    return p;
+  } else {
+    Serial.println("Unknown error");
+    return p;
+  }
+
+  return true;
+}
+
+void handleFingerprintEvent() {
+  if (lv_scr_act() == objects.attendance_screen) {
+    getFingerprintID();
+  } else if (lv_scr_act() == objects.add_finger_screen) {
+    getFingerprintEnroll(finger_id);
+  }
+}
 
 //________________________________________________________________________________ 
 void setup() {
   Serial.begin(115200);
   mySerial.begin(57600, SERIAL_8N1, 22, 27); // RX=22, TX=27 (sesuaikan dengan pin Anda)
+  
+  Serial.println("\nAdafruit Fingerprint sensor test");
 
   if (finger.verifyPassword()) {
     Serial.println("Found fingerprint sensor!");
@@ -408,9 +540,6 @@ void setup() {
   String LVGL_Arduino = String("LVGL Library Version: ") + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
   Serial.println(LVGL_Arduino);
   delay(500);
-  
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
 
   // Initialize the touchscreen
   touchscreenSPI.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
@@ -447,11 +576,12 @@ void setup() {
   lv_obj_add_event_cb(objects.button_back_3, button_register_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_4, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN);
+   
+  // EventData* checkin = new EventData;
+  // checkin->id = 1;
 
-  EventData* checkin = new EventData;
-  checkin->id = 1;
-
-  lv_obj_add_event_cb(objects.button_checkin, checkin_event_handler, LV_EVENT_CLICKED, checkin);
+  // lv_obj_add_event_cb(objects.button_checkin, checkin_event_handler, LV_EVENT_CLICKED, checkin);
 
   lv_obj_add_event_cb(objects.keyboard_password, password_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.keyboard_id, get_user_event_handler, LV_EVENT_CLICKED, NULL);
@@ -467,6 +597,7 @@ void setup() {
   lv_table_set_cell_value(objects.table_user, 0, 0, "ID");
   lv_table_set_cell_value(objects.table_user, 0, 1, "Name");
   lv_table_set_cell_value(objects.table_user, 0, 2, "Category");
+  pinMode(22, INPUT);
 }
 
 void loop() {
@@ -475,8 +606,10 @@ void loop() {
   lv_timer_handler(); // Update the UI.
 
   if(lv_scr_act() == objects.attendance_screen){
-    Serial.println("halaman attendance");
+    getFingerprintID(); 
+  }else if(lv_scr_act() == objects.add_finger_screen){
+    getFingerprintEnroll(finger_id);
   }
 
-  delay(5);
+  delay(50);
 }

@@ -16,7 +16,7 @@ typedef struct _objects_t {
     lv_obj_t *label_name;
     lv_obj_t *obj0;
     lv_obj_t *button_back_2;
-    lv_obj_t *button_checkin;
+    // lv_obj_t *button_checkin;
     lv_obj_t *popup_attendance;
     lv_obj_t *pic_success;
     lv_obj_t *label_name_popup;
@@ -42,6 +42,13 @@ typedef struct _objects_t {
     lv_obj_t *popup_verification;
     lv_obj_t *label_status_1;
     lv_obj_t *pic_error_1;
+    lv_obj_t *label_status_finger;
+    lv_obj_t *label_status_finger_2;
+    lv_obj_t *popup_register;
+    lv_obj_t *pic_success_register;
+    lv_obj_t *label_name_popup_register;
+    lv_obj_t *pic_error_register;
+    lv_obj_t *label_status_register;
 } objects_t;
 
 extern objects_t objects;
