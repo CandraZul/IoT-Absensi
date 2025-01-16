@@ -6,10 +6,10 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <Adafruit_Fingerprint.h> 
+#include <Adafruit_Fingerprint.h>
 
-const char* ssid = "enumatechz";
-const char* password = "3numaTechn0l0gy";
+const char *ssid = "enumatechz";
+const char *password = "3numaTechn0l0gy";
 
 //Your Domain name with URL path or IP address with path
 String serverName = "http://192.168.1.14:8080/api/users";
@@ -17,10 +17,10 @@ String apiCheckin = "http://192.168.1.14:8080/api/attendance";
 String authToken = "jgk0advefk90gj4ngin4290";
 
 // Defines the T_CS Touchscreen PIN.
-#define T_CS_PIN  13 //--> T_CS
+#define T_CS_PIN 13  //--> T_CS
 
 // Defines the screen resolution.
-#define SCREEN_WIDTH  320
+#define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
 
 // Defines the Touchscreen calibration result values.
@@ -34,7 +34,7 @@ String authToken = "jgk0advefk90gj4ngin4290";
 // LVGL draw into this buffer, 1/10 screen size usually works well.
 #define DRAW_BUF_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT / 10 * (LV_COLOR_DEPTH / 8))
 
-HardwareSerial mySerial(2); // UART2 untuk ESP32
+HardwareSerial mySerial(2);  // UART2 untuk ESP32
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 
 uint8_t *draw_buf;
@@ -47,15 +47,15 @@ XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
 
 int finger_id;
 
-//________________________________________________________________________________ 
+//________________________________________________________________________________
 // If logging is enabled, it will inform the user about what is happening in the library.
-void log_print(lv_log_level_t level, const char * buf) {
+void log_print(lv_log_level_t level, const char *buf) {
   LV_UNUSED(level);
   Serial.println(buf);
   Serial.flush();
 }
 
-void touchscreen_read(lv_indev_t * indev, lv_indev_data_t * data) {
+void touchscreen_read(lv_indev_t *indev, lv_indev_data_t *data) {
   if (touchscreen.tirqTouched() && touchscreen.touched()) {
     TS_Point p = touchscreen.getPoint();
 
@@ -75,7 +75,7 @@ void touchscreen_read(lv_indev_t * indev, lv_indev_data_t * data) {
     int calibrated_y = alpha_x * p.x + beta_x * p.y + delta_x;
     calibrated_y = min(SCREEN_HEIGHT - 1, max(0, calibrated_y));
 
-    int pressure = p.z; // Tekanan sentuhan
+    int pressure = p.z;  // Tekanan sentuhan
 
     // Periksa apakah tekanan cukup besar untuk dianggap sebagai sentuhan valid
     data->state = LV_INDEV_STATE_PRESSED;
@@ -88,7 +88,7 @@ void touchscreen_read(lv_indev_t * indev, lv_indev_data_t * data) {
     Serial.print(calibrated_y);
     Serial.print(" | Pressure = ");
     Serial.println(pressure);
-    
+
   } else {
     data->state = LV_INDEV_STATE_RELEASED;
   }
@@ -96,7 +96,7 @@ void touchscreen_read(lv_indev_t * indev, lv_indev_data_t * data) {
 
 
 // Event handler for the "Register" button.
-static void button_register_event_handler(lv_event_t * e) {
+static void button_register_event_handler(lv_event_t *e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
     Serial.println("pindah ke reg");
     // get_table_data();
@@ -107,21 +107,21 @@ static void button_register_event_handler(lv_event_t * e) {
 }
 
 // Event handler for the "Attendance" button.
-static void button_attendance_event_handler(lv_event_t * e) {
+static void button_attendance_event_handler(lv_event_t *e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
     Serial.println("pindah ke attendance");
     lv_scr_load(objects.attendance_screen);  // Go to Attendance screen.
   }
 }
 
-static void button_home_event_handler(lv_event_t * e) {
+static void button_home_event_handler(lv_event_t *e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
     Serial.println("kembali ke home");
     lv_scr_load(objects.main);  // Go to Register screen.
   }
 }
 
-static void button_verification_event_handler(lv_event_t * e) {
+static void button_verification_event_handler(lv_event_t *e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
     Serial.println("kembali ke home");
     lv_scr_load(objects.verification_screen);  // Go to Register screen.
@@ -129,7 +129,7 @@ static void button_verification_event_handler(lv_event_t * e) {
 }
 
 
-static void get_table_data(String id){
+static void get_table_data(String id) {
   // Get data from the server
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
@@ -161,15 +161,15 @@ static void get_table_data(String id){
         String name = doc["users"]["name"].as<String>();
         String category = doc["users"]["category_name"].as<String>();
         finger_id = doc["users"]["id_fingerprint"].as<int>();
-        if(name != "null"){
+        if (name != "null") {
           // Insert ID and Name into the table
           lv_table_set_cell_value(objects.table_user, 1, 0, id.c_str());
           lv_table_set_cell_value(objects.table_user, 1, 1, name.c_str());
           lv_table_set_cell_value(objects.table_user, 1, 2, category.c_str());
 
-          
+
           lv_scr_load(objects.add_finger_screen);
-        }else{
+        } else {
           String status = "Member Not Found";
           lv_label_set_text(objects.label_input_member, status.c_str());
         }
@@ -190,9 +190,9 @@ static void get_table_data(String id){
   }
 }
 
-static void checkin_event_handler(uint8_t id){
+static void checkin_event_handler(uint8_t id) {
 
-  if(WiFi.status() == WL_CONNECTED){
+  if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     String serverPath = apiCheckin;
     // Connect to the server
@@ -210,7 +210,7 @@ static void checkin_event_handler(uint8_t id){
     // Send HTTP POST request
     int httpResponseCode = http.POST(requestBody);
 
-     if (httpResponseCode > 0) {
+    if (httpResponseCode > 0) {
       Serial.print("HTTP Response code: ");
       Serial.println(httpResponseCode);
 
@@ -229,9 +229,9 @@ static void checkin_event_handler(uint8_t id){
         String name = responseDoc["user"]["name"].as<String>();
         lv_label_set_text(objects.label_name_popup, name.c_str());
         String type = responseDoc["data"]["status"].as<String>();
-        if(type=="departed"){
+        if (type == "departed") {
           showPopupSuccess("Goodbye");
-        }else{
+        } else {
           showPopupSuccess("Welcome");
         }
       } else {
@@ -250,90 +250,90 @@ static void checkin_event_handler(uint8_t id){
 }
 
 void hidePopupCallback(lv_timer_t *timer) {
-    lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Sembunyikan panel
-    lv_timer_del(timer); // Hapus timer setelah selesai
+  lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);  // Sembunyikan panel
+  lv_timer_del(timer);                                            // Hapus timer setelah selesai
 }
 
 void showPopupSuccess(String status) {
-    lv_label_set_text(objects.label_status, status.c_str());
-    lv_obj_clear_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Tampilkan panel
-    lv_timer_t *timer = lv_timer_create(hidePopupCallback, 3000, NULL); // Buat timer untuk menyembunyikan panel
+  lv_label_set_text(objects.label_status, status.c_str());
+  lv_obj_clear_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);     // Tampilkan panel
+  lv_timer_t *timer = lv_timer_create(hidePopupCallback, 4000, NULL);  // Buat timer untuk menyembunyikan panel
 }
 
 void hidePopupErrorCallback(lv_timer_t *timer) {
-    lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Sembunyikan panel
-    lv_obj_add_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_clear_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_clear_flag(objects.label_name_popup, LV_OBJ_FLAG_HIDDEN);
-    lv_timer_del(timer); // Hapus timer setelah selesai
+  lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);  // Sembunyikan panel
+  lv_obj_add_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(objects.label_name_popup, LV_OBJ_FLAG_HIDDEN);
+  lv_timer_del(timer);  // Hapus timer setelah selesai
 }
 
 void showPopupError(String message) {
-    lv_obj_clear_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
-    lv_label_set_text(objects.label_name_popup, message.c_str());
-    String status = "Error";
-    lv_label_set_text(objects.label_status, status.c_str());
-    lv_obj_clear_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN); // Tampilkan panel
-    lv_timer_t *timer = lv_timer_create(hidePopupErrorCallback, 3000, NULL); // Buat timer untuk menyembunyikan panel
+  lv_obj_clear_flag(objects.pic_error, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(objects.pic_success, LV_OBJ_FLAG_HIDDEN);
+  lv_label_set_text(objects.label_name_popup, message.c_str());
+  String status = "Error";
+  lv_label_set_text(objects.label_status, status.c_str());
+  lv_obj_clear_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);          // Tampilkan panel
+  lv_timer_t *timer = lv_timer_create(hidePopupErrorCallback, 4000, NULL);  // Buat timer untuk menyembunyikan panel
 }
 
-void hidePopupVerification(lv_timer_t *timer){
+void hidePopupVerification(lv_timer_t *timer) {
   lv_obj_add_flag(objects.popup_verification, LV_OBJ_FLAG_HIDDEN);
   lv_timer_del(timer);
 }
 
 void hidePopupRegister(lv_timer_t *timer) {
-    lv_obj_add_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN); // Sembunyikan panel
-    lv_timer_del(timer); // Hapus timer setelah selesai
+  lv_obj_add_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN);  // Sembunyikan panel
+  lv_timer_del(timer);                                          // Hapus timer setelah selesai
 }
 
-void showPopupRegister(String status, bool success) {
-  if(success){
-    status = "Success";
+void showPopupRegister(String info, bool success) {
+  if (success) {
+    String status = "Success";
     lv_label_set_text(objects.label_status_register, status.c_str());
-    lv_label_set_text(objects.label_name_popup_register, ""); 
-    lv_obj_clear_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN); 
+    lv_label_set_text(objects.label_name_popup_register, info.c_str());
+    lv_obj_clear_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(objects.pic_error_register, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(objects.pic_success_register, LV_OBJ_FLAG_HIDDEN);
-    lv_timer_t *timer = lv_timer_create(hidePopupRegister, 3000, NULL); 
-  }else{
+    lv_timer_t *timer = lv_timer_create(hidePopupRegister, 3000, NULL);
+  } else {
     String title = "Failed";
     lv_label_set_text(objects.label_status_register, title.c_str());
-    lv_label_set_text(objects.label_name_popup_register, status.c_str()); 
-    lv_obj_clear_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN); 
+    lv_label_set_text(objects.label_name_popup_register, info.c_str());
+    lv_obj_clear_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(objects.pic_error_register, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(objects.pic_success_register, LV_OBJ_FLAG_HIDDEN);
-    lv_timer_t *timer = lv_timer_create(hidePopupRegister, 3000, NULL); 
+    lv_timer_t *timer = lv_timer_create(hidePopupRegister, 3000, NULL);
   }
 }
 
-static void password_event_handler(lv_event_t *e){
+static void password_event_handler(lv_event_t *e) {
   int btn_index = lv_keyboard_get_selected_btn(objects.keyboard_password);
   String password = lv_textarea_get_text(objects.input_password);
   Serial.println(btn_index);
   Serial.println(password);
-  if(btn_index == 11){
-    if(password == "123456"){
+  if (btn_index == 11) {
+    if (password == "123456") {
       String status = "Input Member ID";
       lv_label_set_text(objects.label_input_member, status.c_str());
       lv_scr_load(objects.reg_screen);
-    }else{
+    } else {
       Serial.print("pasword salah");
       lv_obj_clear_flag(objects.popup_verification, LV_OBJ_FLAG_HIDDEN);
       lv_timer_t *timer = lv_timer_create(hidePopupVerification, 1000, NULL);
     }
-    lv_textarea_set_text(objects.input_password, ""); 
+    lv_textarea_set_text(objects.input_password, "");
   }
 }
 
-static void get_user_event_handler(lv_event_t *e){
-    int btn_index = lv_keyboard_get_selected_btn(objects.keyboard_id);
-    if(btn_index == 11){
-      String id = lv_textarea_get_text(objects.input_id);
-      get_table_data(id);
-      lv_textarea_set_text(objects.input_id, "");
-    }
+static void get_user_event_handler(lv_event_t *e) {
+  int btn_index = lv_keyboard_get_selected_btn(objects.keyboard_id);
+  if (btn_index == 11) {
+    String id = lv_textarea_get_text(objects.input_id);
+    get_table_data(id);
+    lv_textarea_set_text(objects.input_id, "");
+  }
 }
 
 uint8_t getFingerprintID() {
@@ -364,7 +364,8 @@ uint8_t getFingerprintID() {
 
 uint8_t getFingerprintEnroll(int id) {
   int p = -1;
-  Serial.print("Waiting for valid finger to enroll as #"); Serial.println(id);
+  Serial.print("Waiting for valid finger to enroll as #");
+  Serial.println(id);
   p = finger.getImage();
   if (p != FINGERPRINT_OK) {
     return p;
@@ -395,47 +396,51 @@ uint8_t getFingerprintEnroll(int id) {
   }
 
   Serial.println("Remove finger");
-  delay(2000);
   p = 0;
   while (p != FINGERPRINT_NOFINGER) {
     p = finger.getImage();
   }
-  Serial.print("ID "); Serial.println(id);
+  Serial.print("ID ");
+  Serial.println(id);
   p = -1;
   Serial.println("Place same finger again");
-  unsigned long startTime = millis(); // Catat waktu mulai
-  showPopupRegister("Image taken, place the same finger again", true);
+  unsigned long startTime = millis();  // Catat waktu mulai
+  lv_tick_inc(millis() - lastTick);    // Update the tick timer.
+  lastTick = millis();
+  lv_timer_handler();
+  showPopupRegister("Remove finger then place the same finger again", true);
   while (p != FINGERPRINT_OK) {
-      lv_tick_inc(millis() - lastTick); // Update the tick timer.
-      lastTick = millis();
-      lv_timer_handler();
-      p = finger.getImage();
+    lv_tick_inc(millis() - lastTick);  // Update the tick timer.
+    lastTick = millis();
+    lv_timer_handler();
 
-      // Periksa waktu yang telah berlalu
-      if (millis() - startTime > 6000) {
-          Serial.println("Timeout reached: 6 seconds");
-          showPopupRegister("Operation timed out. Try again.", false);
-          break; // Keluar dari loop setelah 6 detik
-      }
+    p = finger.getImage();
 
-      switch (p) {
+    // Periksa waktu yang telah berlalu
+    if (millis() - startTime > 6000) {
+      Serial.println("Timeout reached: 6 seconds");
+      showPopupRegister("Operation timed out. Try again.", false);
+      break;  // Keluar dari loop setelah 6 detik
+    }
+
+    switch (p) {
       case FINGERPRINT_OK:
-          Serial.println("Image taken");
-          break;
+        Serial.println("Image taken");
+        break;
       case FINGERPRINT_NOFINGER:
-          Serial.print(".");
-          break;
+        Serial.print(".");
+        break;
       case FINGERPRINT_PACKETRECIEVEERR:
-          Serial.println("Communication error");
-          break;
+        Serial.println("Communication error");
+        break;
       case FINGERPRINT_IMAGEFAIL:
-          Serial.println("Imaging error");
-          break;
+        Serial.println("Imaging error");
+        break;
       default:
-          Serial.println("Unknown error");
-          break;
-      }
-      delay(5);
+        Serial.println("Unknown error");
+        break;
+    }
+    delay(5);
   }
   // OK success!
 
@@ -463,7 +468,8 @@ uint8_t getFingerprintEnroll(int id) {
   }
 
   // OK converted!
-  Serial.print("Creating model for #");  Serial.println(id);
+  Serial.print("Creating model for #");
+  Serial.println(id);
 
   p = finger.createModel();
   if (p == FINGERPRINT_OK) {
@@ -479,7 +485,8 @@ uint8_t getFingerprintEnroll(int id) {
     return p;
   }
 
-  Serial.print("ID "); Serial.println(id);
+  Serial.print("ID ");
+  Serial.println(id);
   p = finger.storeModel(id);
   if (p == FINGERPRINT_OK) {
     Serial.println("Stored!");
@@ -509,11 +516,11 @@ void handleFingerprintEvent() {
   }
 }
 
-//________________________________________________________________________________ 
+//________________________________________________________________________________
 void setup() {
   Serial.begin(115200);
-  mySerial.begin(57600, SERIAL_8N1, 22, 27); // RX=22, TX=27 (sesuaikan dengan pin Anda)
-  
+  mySerial.begin(57600, SERIAL_8N1, 22, 27);  // RX=22, TX=27 (sesuaikan dengan pin Anda)
+
   Serial.println("\nAdafruit Fingerprint sensor test");
 
   if (finger.verifyPassword()) {
@@ -533,7 +540,7 @@ void setup() {
   Serial.println(WiFi.localIP());
   Serial.println();
   // delay(3000);
-  
+
   Serial.println("ESP32 + TFT LCD Touchscreen ILI9341 + LVGL + EEZ Studio");
   delay(500);
 
@@ -554,11 +561,11 @@ void setup() {
 
   // Create display buffer
   draw_buf = new uint8_t[DRAW_BUF_SIZE];
-  lv_display_t * disp = lv_tft_espi_create(SCREEN_HEIGHT, SCREEN_WIDTH, draw_buf, DRAW_BUF_SIZE);
+  lv_display_t *disp = lv_tft_espi_create(SCREEN_HEIGHT, SCREEN_WIDTH, draw_buf, DRAW_BUF_SIZE);
   lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_270);
 
   // Initialize LVGL input device (Touchscreen)
-  lv_indev_t * indev = lv_indev_create();
+  lv_indev_t *indev = lv_indev_create();
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
   lv_indev_set_read_cb(indev, touchscreen_read);
 
@@ -577,7 +584,7 @@ void setup() {
   lv_obj_add_event_cb(objects.button_back_4, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN);
-   
+
   // EventData* checkin = new EventData;
   // checkin->id = 1;
 
@@ -587,9 +594,9 @@ void setup() {
   lv_obj_add_event_cb(objects.keyboard_id, get_user_event_handler, LV_EVENT_CLICKED, NULL);
 
   lv_table_set_col_cnt(objects.table_user, 3);
-  lv_table_set_col_width(objects.table_user, 0, 60); 
-  lv_table_set_col_width(objects.table_user, 1, 140); 
-  lv_table_set_col_width(objects.table_user, 2, 110); 
+  lv_table_set_col_width(objects.table_user, 0, 60);
+  lv_table_set_col_width(objects.table_user, 1, 140);
+  lv_table_set_col_width(objects.table_user, 2, 110);
 
   lv_table_set_row_count(objects.table_user, 2);
   lv_obj_set_style_text_font(objects.table_user, &lv_font_montserrat_12, LV_PART_ITEMS | LV_STATE_DEFAULT);
@@ -597,17 +604,16 @@ void setup() {
   lv_table_set_cell_value(objects.table_user, 0, 0, "ID");
   lv_table_set_cell_value(objects.table_user, 0, 1, "Name");
   lv_table_set_cell_value(objects.table_user, 0, 2, "Category");
-  pinMode(22, INPUT);
 }
 
 void loop() {
-  lv_tick_inc(millis() - lastTick); // Update the tick timer.
+  lv_tick_inc(millis() - lastTick);  // Update the tick timer.
   lastTick = millis();
-  lv_timer_handler(); // Update the UI.
+  lv_timer_handler();  // Update the UI.
 
-  if(lv_scr_act() == objects.attendance_screen){
-    getFingerprintID(); 
-  }else if(lv_scr_act() == objects.add_finger_screen){
+  if (lv_scr_act() == objects.attendance_screen) {
+    getFingerprintID();
+  } else if (lv_scr_act() == objects.add_finger_screen) {
     getFingerprintEnroll(finger_id);
   }
 
