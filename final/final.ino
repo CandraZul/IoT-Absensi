@@ -363,12 +363,17 @@ uint8_t getFingerprintID() {
 }
 
 uint8_t getFingerprintEnroll(int id) {
-  int p = -1;
+  uint8_t p = finger.getImage();
+  
+  lv_tick_inc(millis() - lastTick);    // Update the tick timer.
+  lastTick = millis();
   Serial.print("Waiting for valid finger to enroll as #");
   Serial.println(id);
-  p = finger.getImage();
-  if (p != FINGERPRINT_OK) {
-    return p;
+  while (p != FINGERPRINT_OK) {
+      lv_tick_inc(millis() - lastTick);  // Update the tick timer.
+      lastTick = millis();
+      lv_timer_handler();
+      return p;
   }
 
   // OK success!
@@ -396,6 +401,19 @@ uint8_t getFingerprintEnroll(int id) {
   }
 
   Serial.println("Remove finger");
+  lv_tick_inc(millis() - lastTick);  // Update the tick timer.
+  lastTick = millis();
+  lv_timer_handler();
+  showPopupRegister("Remove finger then place the same finger again", true);
+
+  bool loop = true;
+  while(loop){
+    lv_timer_handler();
+    if (millis() - lastTick >= 2000) {
+      loop = false; 
+    }
+  }
+
   p = 0;
   while (p != FINGERPRINT_NOFINGER) {
     p = finger.getImage();
@@ -404,11 +422,8 @@ uint8_t getFingerprintEnroll(int id) {
   Serial.println(id);
   p = -1;
   Serial.println("Place same finger again");
-  unsigned long startTime = millis();  // Catat waktu mulai
-  lv_tick_inc(millis() - lastTick);    // Update the tick timer.
-  lastTick = millis();
-  lv_timer_handler();
-  showPopupRegister("Remove finger then place the same finger again", true);
+
+  unsigned long startTime = millis(); 
   while (p != FINGERPRINT_OK) {
     lv_tick_inc(millis() - lastTick);  // Update the tick timer.
     lastTick = millis();
@@ -440,7 +455,7 @@ uint8_t getFingerprintEnroll(int id) {
         Serial.println("Unknown error");
         break;
     }
-    delay(5);
+    delay(50);
   }
   // OK success!
 
