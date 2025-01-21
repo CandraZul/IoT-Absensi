@@ -12,8 +12,8 @@ const char *ssid = "enumatechz";
 const char *password = "3numaTechn0l0gy";
 
 //Your Domain name with URL path or IP address with path
-String serverName = "http://192.168.1.14:8080/api/users";
-String apiCheckin = "http://192.168.1.14:8080/api/attendance";
+String serverName = "https://absen.enumatechnology.com/api/users";
+String apiCheckin = "https://absen.enumatechnology.com/api/attendance";
 String authToken = "jgk0advefk90gj4ngin4290";
 
 // Defines the T_CS Touchscreen PIN.
@@ -190,24 +190,25 @@ static void get_table_data(String id) {
   }
 }
 
-static void checkin_event_handler(uint8_t id) {
-
+void httpTask(void *param) {
+  // Data yang diterima dari parameter task
+  uint8_t id = *(uint8_t *)param;
+  
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     String serverPath = apiCheckin;
-    // Connect to the server
+
     http.begin(serverPath.c_str());
-    // Set HTTP headers (for JSON)
     http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", authToken);
 
     StaticJsonDocument<1024> doc;
     doc["user_id"] = id;
 
     String requestBody;
     serializeJson(doc, requestBody);
-    http.addHeader("Authorization", authToken);
 
-    // Send HTTP POST request
+    // Kirim HTTP POST request
     int httpResponseCode = http.POST(requestBody);
 
     if (httpResponseCode > 0) {
@@ -221,33 +222,67 @@ static void checkin_event_handler(uint8_t id) {
       // Parse JSON payload
       StaticJsonDocument<1024> responseDoc;
       DeserializationError error = deserializeJson(responseDoc, payload);
-      String status = responseDoc["status"].as<String>();
-      if (status == "success") {
-        // Handle response (for example, extract data)
-        String responseMessage = responseDoc["message"].as<String>();
-        Serial.println("Response message: " + responseMessage);
-        String name = responseDoc["user"]["name"].as<String>();
-        lv_label_set_text(objects.label_name_popup, name.c_str());
-        String type = responseDoc["data"]["status"].as<String>();
-        if (type == "departed") {
-          showPopupSuccess("Goodbye");
+      if (!error) {
+        String status = responseDoc["status"].as<String>();
+        if (status == "success") {
+          String name = responseDoc["user"]["name"].as<String>();
+          lv_label_set_text(objects.label_name_popup, name.c_str());
+          String type = responseDoc["data"]["status"].as<String>();
+          if (type == "departed") {
+            showPopupSuccess("Goodbye");
+          } else {
+            showPopupSuccess("Welcome");
+          }
         } else {
-          showPopupSuccess("Welcome");
+          String errorMsg = responseDoc["message"].as<String>();
+          showPopupError(errorMsg);
         }
       } else {
-        String status = responseDoc["message"];
-        showPopupError(status);
         Serial.print("JSON Deserialization failed: ");
         Serial.println(error.c_str());
+        showPopupError("Invalid server response");
       }
     } else {
-      String status = "Problem with server";
-      showPopupError(status);
       Serial.print("Error code: ");
       Serial.println(httpResponseCode);
+      showPopupError("Problem with server");
     }
+
+    http.end(); // Akhiri koneksi HTTP
+  } else {
+    showPopupError("No WiFi connection");
   }
+
+  // Hapus task setelah selesai
+  vTaskDelete(NULL);
 }
+
+
+static void checkin_event_handler(uint8_t id) {
+  // Salin ID ke memori dinamis agar tetap tersedia untuk task
+  uint8_t *idParam = (uint8_t *)malloc(sizeof(uint8_t));
+  if (idParam == NULL) {
+    showPopupError("Memory allocation failed");
+    return;
+  }
+  *idParam = id;
+
+  // Buat task untuk menjalankan HTTP POST
+  xTaskCreate(
+    httpTask,         // Fungsi task
+    "HTTP Task",      // Nama task
+    4096,             // Ukuran stack task
+    idParam,          // Parameter task (user ID)
+    1,                // Prioritas task
+    NULL              // Handle task (tidak diperlukan)
+  );
+
+  // Tetap perbarui timer LVGL di fungsi utama
+  lv_tick_inc(millis() - lastTick);
+  lastTick = millis();
+  lv_timer_handler();
+}
+
 
 void hidePopupCallback(lv_timer_t *timer) {
   lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);  // Sembunyikan panel
