@@ -94,7 +94,7 @@ void touchscreen_read(lv_indev_t *indev, lv_indev_data_t *data) {
   }
 }
 
-
+String destination = "";
 // Event handler for the "Register" button.
 static void button_register_event_handler(lv_event_t *e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
@@ -121,10 +121,32 @@ static void button_home_event_handler(lv_event_t *e) {
   }
 }
 
+
 static void button_verification_event_handler(lv_event_t *e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
-    Serial.println("kembali ke home");
+    Serial.println("Ke verifikasi");
     lv_scr_load(objects.verification_screen);  // Go to Register screen.
+  }
+}
+static void button_verification_reg_event_handler(lv_event_t *e) {
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+    Serial.println("Ke verifikasi");
+    destination = "reg";
+    lv_scr_load(objects.verification_screen);  // Go to Register screen.
+  }
+}
+static void button_verification_del_event_handler(lv_event_t *e) {
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+    Serial.println("Ke verifikasi");
+    destination = "del";
+    lv_scr_load(objects.verification_screen);  // Go to Register screen.
+  }
+}
+
+static void button_delete_event_handler(lv_event_t *e) {
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+    Serial.println("ke delete screen");
+    lv_scr_load(objects.delete_screen);  // Go to Register screen.
   }
 }
 
@@ -193,7 +215,7 @@ static void get_table_data(String id) {
 void httpTask(void *param) {
   // Data yang diterima dari parameter task
   uint8_t id = *(uint8_t *)param;
-  
+
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     String serverPath = apiCheckin;
@@ -248,7 +270,7 @@ void httpTask(void *param) {
       showPopupError("Problem with server");
     }
 
-    http.end(); // Akhiri koneksi HTTP
+    http.end();  // Akhiri koneksi HTTP
   } else {
     showPopupError("No WiFi connection");
   }
@@ -269,12 +291,12 @@ static void checkin_event_handler(uint8_t id) {
 
   // Buat task untuk menjalankan HTTP POST
   xTaskCreate(
-    httpTask,         // Fungsi task
-    "HTTP Task",      // Nama task
-    4096,             // Ukuran stack task
-    idParam,          // Parameter task (user ID)
-    1,                // Prioritas task
-    NULL              // Handle task (tidak diperlukan)
+    httpTask,     // Fungsi task
+    "HTTP Task",  // Nama task
+    4096,         // Ukuran stack task
+    idParam,      // Parameter task (user ID)
+    1,            // Prioritas task
+    NULL          // Handle task (tidak diperlukan)
   );
 
   // Tetap perbarui timer LVGL di fungsi utama
@@ -352,7 +374,11 @@ static void password_event_handler(lv_event_t *e) {
     if (password == "123456") {
       String status = "Input Member ID";
       lv_label_set_text(objects.label_input_member, status.c_str());
-      lv_scr_load(objects.reg_screen);
+      if (destination == "reg") {
+        lv_scr_load(objects.reg_screen);
+      } else {
+        lv_scr_load(objects.delete_screen);
+      }
     } else {
       Serial.print("pasword salah");
       lv_obj_clear_flag(objects.popup_verification, LV_OBJ_FLAG_HIDDEN);
@@ -370,6 +396,51 @@ static void get_user_event_handler(lv_event_t *e) {
     lv_textarea_set_text(objects.input_id, "");
   }
 }
+static void delete_fingerprint_event_handler(lv_event_t *e) {
+  int btn_index = lv_keyboard_get_selected_btn(objects.keyboard_id_1);
+  if (btn_index == 11) {
+    const char *id_str = lv_textarea_get_text(objects.input_id_1);
+    int id = atoi(id_str);
+    deleteFingerprint(id);
+    lv_textarea_set_text(objects.input_id_1, "");
+  }
+}
+
+static void reset_label_cb(lv_timer_t * timer) {
+    lv_label_set_text(objects.label_input_member_1, "Input Fingerprint ID");
+}
+
+uint8_t deleteFingerprint(int id) {
+  uint8_t p = finger.deleteModel(id);
+  String status;
+
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Deleted!");
+    status = "Deleted";
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    status = "Communication error";
+  } else if (p == FINGERPRINT_BADLOCATION) {
+    Serial.println("Could not delete in that location");
+    status = "Could not delete in that location";
+  } else if (p == FINGERPRINT_FLASHERR) {
+    Serial.println("Error writing to flash");
+    status = "Error writing to flash";
+  } else {
+    Serial.print("Unknown error: 0x");
+    Serial.println(p, HEX);
+    status = "Unknown error";
+  }
+
+  // Set label status
+  lv_label_set_text(objects.label_input_member_1, status.c_str());
+
+  // Buat timer untuk reset setelah 3 detik (3000 ms)
+  lv_timer_create(reset_label_cb, 3000, NULL);
+
+  return p;
+}
+
 
 uint8_t getFingerprintID() {
   uint8_t p = finger.getImage();
@@ -399,16 +470,16 @@ uint8_t getFingerprintID() {
 
 uint8_t getFingerprintEnroll(int id) {
   uint8_t p = finger.getImage();
-  
-  lv_tick_inc(millis() - lastTick);    // Update the tick timer.
+
+  lv_tick_inc(millis() - lastTick);  // Update the tick timer.
   lastTick = millis();
   Serial.print("Waiting for valid finger to enroll as #");
   Serial.println(id);
   while (p != FINGERPRINT_OK) {
-      lv_tick_inc(millis() - lastTick);  // Update the tick timer.
-      lastTick = millis();
-      lv_timer_handler();
-      return p;
+    lv_tick_inc(millis() - lastTick);  // Update the tick timer.
+    lastTick = millis();
+    lv_timer_handler();
+    return p;
   }
 
   // OK success!
@@ -442,10 +513,10 @@ uint8_t getFingerprintEnroll(int id) {
   showPopupRegister("Remove finger then place the same finger again", true);
 
   bool loop = true;
-  while(loop){
+  while (loop) {
     lv_timer_handler();
     if (millis() - lastTick >= 2000) {
-      loop = false; 
+      loop = false;
     }
   }
 
@@ -458,7 +529,7 @@ uint8_t getFingerprintEnroll(int id) {
   p = -1;
   Serial.println("Place same finger again");
 
-  unsigned long startTime = millis(); 
+  unsigned long startTime = millis();
   while (p != FINGERPRINT_OK) {
     lv_tick_inc(millis() - lastTick);  // Update the tick timer.
     lastTick = millis();
@@ -626,12 +697,14 @@ void setup() {
   ui_init();
 
   // Register button event handlers
-  lv_obj_add_event_cb(objects.button_register, button_verification_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.button_register, button_verification_reg_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_attendance, button_attendance_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_1, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_2, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_3, button_register_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_4, button_home_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.button_back_5, button_home_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.button_delete, button_verification_del_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN);
 
@@ -642,6 +715,7 @@ void setup() {
 
   lv_obj_add_event_cb(objects.keyboard_password, password_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.keyboard_id, get_user_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.keyboard_id_1, delete_fingerprint_event_handler, LV_EVENT_CLICKED, NULL);
 
   lv_table_set_col_cnt(objects.table_user, 3);
   lv_table_set_col_width(objects.table_user, 0, 60);

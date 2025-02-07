@@ -13,6 +13,7 @@ typedef struct _objects_t {
     lv_obj_t *reg_screen;
     lv_obj_t *add_finger_screen;
     lv_obj_t *verification_screen;
+    lv_obj_t *delete_screen;
     lv_obj_t *label_name;
     lv_obj_t *obj0;
     lv_obj_t *button_back_2;
@@ -26,9 +27,11 @@ typedef struct _objects_t {
     lv_obj_t *button_attendance;
     lv_obj_t *obj1;
     lv_obj_t *label_input_member;
+    lv_obj_t *label_input_member_1;
     lv_obj_t *button_back_1;
     lv_obj_t *input_id;
     lv_obj_t *keyboard_id;
+    lv_obj_t *button_delete;
     lv_obj_t *label_name_1;
     lv_obj_t *obj2;
     lv_obj_t *button_back_3;
@@ -49,6 +52,13 @@ typedef struct _objects_t {
     lv_obj_t *label_name_popup_register;
     lv_obj_t *pic_error_register;
     lv_obj_t *label_status_register;
+    lv_obj_t *obj4;
+    lv_obj_t *button_back_5;
+    lv_obj_t *input_id_1;
+    lv_obj_t *keyboard_id_1;
+    lv_obj_t *label_name_3;
+    lv_obj_t *obj5;
+
 } objects_t;
 
 extern objects_t objects;
@@ -59,6 +69,8 @@ enum ScreensEnum {
     SCREEN_ID_REG_SCREEN = 3,
     SCREEN_ID_ADD_FINGER_SCREEN = 4,
     SCREEN_ID_VERIFICATION_SCREEN = 5,
+    SCREEN_ID_DELETE_SCREEN = 6,
+    SCREEN_ID_VERIFICATION_SCREEN_1 = 7,
 };
 
 void create_screen_attendance_screen();
@@ -75,6 +87,12 @@ void tick_screen_add_finger_screen();
 
 void create_screen_verification_screen();
 void tick_screen_verification_screen();
+
+void create_screen_delete_screen();
+void tick_screen_delete_screen();
+
+void create_screen_verification_screen_1();
+void tick_screen_verification_screen_1();
 
 void create_screens();
 void tick_screen(int screen_index);
