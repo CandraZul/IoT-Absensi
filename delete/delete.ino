@@ -69,7 +69,7 @@ void loop()                     // run over and over again
 uint8_t deleteFingerprint(uint8_t id) {
   uint8_t p = -1;
 
-  p = finger.deleteModel(id);
+  p = finger.emptyDatabase();
 
   if (p == FINGERPRINT_OK) {
     Serial.println("Deleted!");

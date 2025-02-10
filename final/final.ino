@@ -405,6 +405,9 @@ static void delete_fingerprint_event_handler(lv_event_t *e) {
     lv_textarea_set_text(objects.input_id_1, "");
   }
 }
+// static void reset_fingerprint_event_handler(lv_event_t *e) {
+//   resetFingerprint();
+// }
 
 static void reset_label_cb(lv_timer_t * timer) {
     lv_label_set_text(objects.label_input_member_1, "Input Fingerprint ID");
@@ -440,6 +443,67 @@ uint8_t deleteFingerprint(int id) {
 
   return p;
 }
+
+uint8_t resetFingerprint() {
+  uint8_t p = finger.emptyDatabase();
+  String status;
+
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Deleted!");
+    status = "All data has been erased";
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    status = "Communication error";
+  } else if (p == FINGERPRINT_BADLOCATION) {
+    Serial.println("Could not delete in that location");
+    status = "Could not delete in that location";
+  } else if (p == FINGERPRINT_FLASHERR) {
+    Serial.println("Error writing to flash");
+    status = "Error writing to flash";
+  } else {
+    Serial.print("Unknown error: 0x");
+    Serial.println(p, HEX);
+    status = "Unknown error";
+  }
+
+  // Set label status
+  lv_label_set_text(objects.label_input_member_1, status.c_str());
+
+  // Buat timer untuk reset setelah 3 detik (3000 ms)
+  lv_timer_create(reset_label_cb, 3000, NULL);
+
+  return p;
+}
+
+
+static lv_obj_t *msgbox;  // Objek Message Box
+
+// Event handler untuk menangani pilihan Yes/No
+static void confirm_reset_event_handler(lv_event_t * e) {
+    lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
+    const char *txt = lv_label_get_text(lv_obj_get_child(btn, 0)); // Ambil teks dari tombol
+
+    if (txt && strcmp(txt, "Yes") == 0) {
+        // Jika "Yes", jalankan fungsi reset
+        resetFingerprint();
+    }
+    lv_obj_del(msgbox);  // Hapus dialog setelah respon
+}
+
+// Fungsi untuk menampilkan dialog konfirmasi
+static void reset_fingerprint_event_handler(lv_event_t * e) {
+    msgbox = lv_msgbox_create(objects.delete_screen);
+
+    lv_msgbox_add_title(msgbox, "Confirmation");
+
+    lv_msgbox_add_text(msgbox, "Are you sure you want to reset all fingerprints?");
+
+    lv_obj_t * btn;
+    btn = lv_msgbox_add_footer_button(msgbox, "Yes");
+    lv_obj_add_event_cb(btn, confirm_reset_event_handler, LV_EVENT_CLICKED, NULL);
+    btn = lv_msgbox_add_footer_button(msgbox, "No");
+}
+
 
 
 uint8_t getFingerprintID() {
@@ -637,6 +701,8 @@ void handleFingerprintEvent() {
   }
 }
 
+
+
 //________________________________________________________________________________
 void setup() {
   Serial.begin(115200);
@@ -705,6 +771,7 @@ void setup() {
   lv_obj_add_event_cb(objects.button_back_4, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_back_5, button_home_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(objects.button_delete, button_verification_del_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.button_reset, reset_fingerprint_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_flag(objects.popup_attendance, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(objects.popup_register, LV_OBJ_FLAG_HIDDEN);
 

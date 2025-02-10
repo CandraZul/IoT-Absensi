@@ -58,6 +58,7 @@ typedef struct _objects_t {
     lv_obj_t *keyboard_id_1;
     lv_obj_t *label_name_3;
     lv_obj_t *obj5;
+    lv_obj_t *button_reset;
 
 } objects_t;
 
